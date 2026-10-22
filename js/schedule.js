@@ -23,6 +23,7 @@ export function buildWeek(monday) {
   if (busy) {
     days[0] = [it('cardioMon', { optional: true })];
     days[5] = [it('cardioSat', { optional: true })];
+    days[6] = [it('flexFull', { optional: true })];
     notes.push('Busy week: Glute A, Glute B and Upper, plus bouldering or surf. Cardio is a bonus; cool-downs stay.');
   }
 
@@ -68,9 +69,7 @@ export function buildWeek(monday) {
       case 5:
         if (has(5, 'yoga')) {
           remove(5, 'yoga');
-          if (!busy) {
-            days[6].push(it('flexFull', { note: 'Or Thursday 6am Vin yoga at Snap Mount Lawley' }));
-          }
+          notes.push('Saturday surf: no yoga class this week. Backup: Thursday 6am Vin yoga at Snap Mount Lawley, and Sunday\'s full flexibility session still counts.');
         }
         remove(5, 'cardioSat');
         days[5].unshift(it('surf'));

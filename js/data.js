@@ -23,7 +23,7 @@ export const SESSIONS = {
     sub: 'Heavy',
     minutes: 60,
     warmup: 'warmupGlute',
-    cooldown: 'cooldownGlute',
+    cooldown: 'hipsPancake',
     exercises: [
       { id: 'hipThrust', name: 'Barbell hip thrust', type: 'lift', sets: 4, reps: [8, 12], start: 50, inc: 5, rest: 120, notes: 'Pause 1 s at the top, chin tucked.' },
       { id: 'rdl', name: 'Romanian deadlift', type: 'lift', sets: 3, reps: [8, 10], start: 45, inc: 5, rest: 120, notes: 'Hips back, stop where your hamstrings stop you.' },
@@ -39,7 +39,7 @@ export const SESSIONS = {
     sub: 'Single-leg & shaping',
     minutes: 55,
     warmup: 'warmupGlute',
-    cooldown: 'cooldownGlute',
+    cooldown: 'hipsPancake',
     exercises: [
       { id: 'bulgarian', name: 'DB Bulgarian split squat', type: 'lift', sets: 3, reps: [8, 12], each: true, start: 12.5, inc: 2.5, rest: 120, notes: 'Lean the torso slightly forward for more glute. Always after the warm-up.' },
       { id: 'backExt', name: '45° back extension (or cable pull-through)', type: 'lift', sets: 3, reps: [12, 15], start: 0, inc: 5, rest: 90, notes: 'Round the upper back, feet turned out. No bench → cable pull-through.' },
@@ -56,7 +56,7 @@ export const SESSIONS = {
     sub: 'Calisthenics',
     minutes: 60,
     warmup: 'warmupUpper',
-    cooldown: 'cooldownClimb',
+    cooldown: 'shouldersBridge',
     note: 'Climbed yesterday? If grip or elbows are cooked, swap archer pulls for an extra handstand and dip block.',
     exercises: [
       { id: 'handstand', name: 'Handstand', type: 'hold', sets: 7, secs: 30, rest: 75, levels: ['Chest to wall', 'Back to wall', 'Kick-up attempts', 'Freestanding'], notes: '6–8 holds of 20–40 s.' },
@@ -95,56 +95,97 @@ export const ROUTINES = {
       { name: 'Dead hang', secs: 30 },
     ],
   },
-  cooldownGlute: {
-    name: 'Cool-down: glute day', transition: 10,
+  hipsPancake: {
+    name: 'Hips and pancake', transition: 8,
+    note: '15 min after glute days, while your hips are warm. Passive holds at about 7/10; the active moves are where the strength at end range comes from.',
+    track: ['gm', 'straddle'],
     steps: [
-      { name: 'Hip flexor stretch', secs: 60, sides: true },
-      { name: 'Pigeon pose', secs: 60, sides: true },
-      { name: 'Hamstring stretch', secs: 45, sides: true },
-      { name: 'Quad stretch', secs: 45, sides: true },
-      { name: 'Cat-cow', secs: 45, cue: '10 slow reps' },
-      { name: "Child's pose", secs: 60 },
+      { name: 'Straddle sit', secs: 90, cue: 'Sitting on {straddle} · long hold, 7/10', part: 'Pancake' },
+      { name: 'Straddle sit (2)', secs: 90, cue: 'Walk the hands a little further', part: 'Pancake' },
+      { name: 'Standing wide good mornings', secs: 45, cue: '10 slow reps · {gm}', part: 'Pancake' },
+      { name: 'Standing wide good mornings (2)', secs: 45, cue: '10 reps · {gm}', part: 'Pancake' },
+      { name: 'Standing wide good mornings (3)', secs: 45, cue: '10 reps · {gm}', part: 'Pancake' },
+      { name: 'Straddle leg lifts', secs: 30, sides: true, cue: '8 reps, hold 2 s at the top', part: 'Pancake' },
+      { name: 'Frog rocks', secs: 40, cue: '10 reps, sink a little deeper each rep', part: 'Hips' },
+      { name: 'Frog hold', secs: 45, cue: 'Settle in, 7/10', part: 'Hips' },
+      { name: 'Pigeon pose', secs: 90, sides: true, part: 'Hips' },
+      { name: 'Couch stretch', secs: 60, sides: true, cue: 'Squeeze the glute of the back leg', part: 'Hips' },
+      { name: 'Hamstring stretch', secs: 45, sides: true, part: 'Hips' },
     ],
   },
-  cooldownClimb: {
-    name: 'Cool-down: climbing & calisthenics', transition: 10,
+  shouldersBridge: {
+    name: 'Shoulders and bridge', transition: 8,
+    note: '15 min after bouldering and upper body. Forearms first, then open the shoulders and upper back for the bridge.',
+    track: ['bridge'],
     steps: [
-      { name: 'Wrist circles & flexor stretch', secs: 30, sides: true, cue: 'Each direction' },
-      { name: 'Forearm extensor stretch', secs: 30, sides: true },
-      { name: 'Doorway chest stretch', secs: 45 },
-      { name: 'Lat stretch hanging from bar', secs: 30 },
-      { name: 'Thoracic rotation', secs: 30, sides: true, cue: '10 reps' },
-      { name: "Child's pose", secs: 60 },
+      { name: 'Wrist flexor stretch', secs: 45, sides: true, cue: 'Palm out, fingers down, arm straight', part: 'Forearms' },
+      { name: 'Wrist extensor stretch', secs: 45, sides: true, cue: 'Back of the hand out, fingers down', part: 'Forearms' },
+      { name: 'Finger extensions', secs: 40, cue: '20 reps against a rubber band', part: 'Forearms' },
+      { name: 'Forearm rotations', secs: 30, cue: '15 slow reps, palms up then down', part: 'Forearms' },
+      { name: 'Thoracic extension over foam roller', secs: 90, cue: 'Hands behind head, arch over the roller', part: 'Bridge' },
+      { name: 'Puppy pose, elbows on a bench', secs: 60, part: 'Bridge' },
+      { name: 'Puppy pose (2)', secs: 60, cue: 'Sink the chest a little lower', part: 'Bridge' },
+      { name: 'Lat stretch, overhead reach', secs: 45, sides: true, part: 'Bridge' },
+      { name: 'Bridge progression', secs: 60, cue: '5 holds of 5 s · {bridge}', part: 'Bridge' },
+      { name: 'Bridge progression (2)', secs: 60, cue: '5 holds of 5 s', part: 'Bridge' },
+      { name: 'Bridge progression (3)', secs: 60, cue: '5 holds of 5 s', part: 'Bridge' },
+      { name: 'Wall angels', secs: 45, cue: '10 slow reps', part: 'Posture' },
+      { name: "Child's pose", secs: 60, part: 'Posture' },
+    ],
+  },
+  preClimb: {
+    name: 'Pre-climb mobility', transition: 5,
+    note: 'About 20 min before bouldering. Keep it active — static holds under 30 s before climbing. Long holds come after.',
+    steps: [
+      { name: 'Deep squat hold', secs: 30, cue: 'Heels down, chest up', part: 'Hips' },
+      { name: 'Deep squat hold (2)', secs: 30, part: 'Hips' },
+      { name: 'Frog rocks', secs: 40, cue: '10 reps', part: 'Hips' },
+      { name: '90/90 hip switches', secs: 40, cue: '10 reps', part: 'Hips' },
+      { name: 'Hip circles', secs: 20, sides: true, cue: '10 each direction', part: 'Hips' },
+      { name: 'Leg swings', secs: 20, sides: true, cue: '10 forward-back, 10 side to side', part: 'Hips' },
+      { name: 'Scapular push-ups', secs: 40, cue: '10 reps', part: 'Scapula' },
+      { name: 'Band pull-aparts', secs: 40, cue: '15 reps (or prone Y-T-W)', part: 'Scapula' },
+      { name: 'Shoulder circles with band or dowel', secs: 40, cue: '8 slow reps', part: 'Scapula' },
+      { name: 'Scapular pull-ups', secs: 40, cue: '8 reps on a bar or jug', part: 'Scapula' },
+      { name: 'Active dead hang', secs: 20, cue: 'Shoulders pulled down', part: 'Scapula' },
+      { name: 'Active dead hang (2)', secs: 20, part: 'Scapula' },
+      { name: 'Wrist circles and palm rocks', secs: 45, cue: '10 each way, palms down then up', part: 'Forearms' },
+      { name: 'Wrist flexor stretch', secs: 20, sides: true, part: 'Forearms' },
+      { name: 'Wrist extensor stretch', secs: 20, sides: true, part: 'Forearms' },
+      { name: 'Finger extensions', secs: 40, cue: '20 reps against a rubber band', part: 'Forearms' },
+      { name: 'Forearm rotations', secs: 30, cue: '15 reps', part: 'Forearms' },
+      { name: 'Easy climbing', secs: 300, cue: '3–4 very easy problems on big holds, then build the grade', part: 'Climb' },
     ],
   },
   cooldownRun: {
-    name: 'Cool-down: run or soccer', transition: 10,
+    name: 'Cool-down: run or soccer', transition: 8,
     steps: [
       { name: 'Calf stretch', secs: 45, sides: true },
-      { name: 'Quad stretch', secs: 45, sides: true },
-      { name: 'Hip flexor stretch', secs: 60, sides: true },
+      { name: 'Couch stretch', secs: 60, sides: true, cue: 'Squeeze the back-leg glute' },
+      { name: 'Couch stretch (2)', secs: 60, sides: true },
       { name: 'Hamstring stretch', secs: 45, sides: true },
       { name: 'Gentle butterfly', secs: 60 },
       { name: 'Figure-four glute stretch', secs: 60, sides: true },
     ],
   },
   flexFull: {
-    name: 'Flexibility: full session', transition: 10,
-    note: 'About 6/10 intensity. Never into groin pain.',
+    name: 'Full flexibility session', transition: 10,
+    note: 'Slow, long holds at about 7/10. Back off at any sharp or pulling groin pain. Target: at least one a week.',
+    track: ['gm', 'straddle', 'bridge'],
     steps: [
       { name: 'Cat-cow', secs: 40, cue: '10 reps', part: 'Warm-up' },
       { name: 'Hip circles', secs: 20, sides: true, cue: '10 each direction', part: 'Warm-up' },
       { name: '90/90 hip switches', secs: 40, cue: '10 reps', part: 'Warm-up' },
       { name: 'Wall handstand practice', secs: 300, cue: 'Short holds, rest as needed', part: 'Handstand' },
-      { name: 'Straddle sit on a yoga block', secs: 90, cue: 'Long hold', part: 'Pancake' },
-      { name: 'Straddle sit on a yoga block (2)', secs: 90, part: 'Pancake' },
-      { name: 'Standing wide good mornings', secs: 45, cue: '10 reps', part: 'Pancake' },
-      { name: 'Standing wide good mornings (2)', secs: 45, cue: '10 reps', part: 'Pancake' },
-      { name: 'Standing wide good mornings (3)', secs: 45, cue: '10 reps', part: 'Pancake' },
+      { name: 'Straddle sit', secs: 90, cue: 'Sitting on {straddle} · long hold', part: 'Pancake' },
+      { name: 'Straddle sit (2)', secs: 90, part: 'Pancake' },
+      { name: 'Standing wide good mornings', secs: 45, cue: '10 reps · {gm}', part: 'Pancake' },
+      { name: 'Standing wide good mornings (2)', secs: 45, cue: '10 reps · {gm}', part: 'Pancake' },
+      { name: 'Standing wide good mornings (3)', secs: 45, cue: '10 reps · {gm}', part: 'Pancake' },
       { name: 'Seated straddle walk-forward pulses', secs: 40, cue: '10 reps', part: 'Pancake' },
       { name: 'Seated straddle walk-forward pulses (2)', secs: 40, cue: '10 reps', part: 'Pancake' },
-      { name: 'Frog rocks', secs: 40, cue: '10 gentle reps, no long hold', part: 'Pancake' },
-      { name: 'Frog rocks (2)', secs: 40, cue: '10 gentle reps', part: 'Pancake' },
+      { name: 'Frog rocks', secs: 40, cue: '10 reps, sink deeper each rep', part: 'Pancake' },
+      { name: 'Frog hold', secs: 60, cue: '7/10', part: 'Pancake' },
       { name: 'Straddle leg lifts', secs: 30, sides: true, cue: '8 reps, hold 2 s', part: 'Pancake' },
       { name: 'Straddle leg lifts (2)', secs: 30, sides: true, cue: '8 reps', part: 'Pancake' },
       { name: 'Couch stretch', secs: 60, sides: true, part: 'Bridge' },
@@ -152,7 +193,7 @@ export const ROUTINES = {
       { name: 'Thoracic extension over foam roller', secs: 120, part: 'Bridge' },
       { name: 'Puppy pose, elbows on bench', secs: 45, part: 'Bridge' },
       { name: 'Puppy pose (2)', secs: 45, part: 'Bridge' },
-      { name: 'Bridge progression', secs: 60, cue: '5 holds of 5 s at your level', part: 'Bridge' },
+      { name: 'Bridge progression', secs: 60, cue: '5 holds of 5 s · {bridge}', part: 'Bridge' },
       { name: 'Bridge progression (2)', secs: 60, cue: '5 holds of 5 s', part: 'Bridge' },
       { name: 'Bridge progression (3)', secs: 60, cue: '5 holds of 5 s', part: 'Bridge' },
       { name: 'Wall angels', secs: 45, cue: '10 reps', part: 'Posture' },
@@ -160,15 +201,16 @@ export const ROUTINES = {
   },
   flex15: {
     name: 'Flexibility: 15 min after yoga', transition: 10,
-    note: 'The starred moves from the full session.',
+    note: 'The key active moves from the full session.',
+    track: ['gm', 'bridge'],
     steps: [
       { name: 'Wall handstand practice', secs: 300, cue: 'Short holds, rest as needed' },
-      { name: 'Standing wide good mornings', secs: 45, cue: '10 reps' },
-      { name: 'Standing wide good mornings (2)', secs: 45, cue: '10 reps' },
-      { name: 'Standing wide good mornings (3)', secs: 45, cue: '10 reps' },
+      { name: 'Standing wide good mornings', secs: 45, cue: '10 reps · {gm}' },
+      { name: 'Standing wide good mornings (2)', secs: 45, cue: '10 reps · {gm}' },
+      { name: 'Standing wide good mornings (3)', secs: 45, cue: '10 reps · {gm}' },
       { name: 'Straddle leg lifts', secs: 30, sides: true, cue: '8 reps, hold 2 s' },
       { name: 'Straddle leg lifts (2)', secs: 30, sides: true, cue: '8 reps' },
-      { name: 'Bridge progression', secs: 60, cue: '5 holds of 5 s at your level' },
+      { name: 'Bridge progression', secs: 60, cue: '5 holds of 5 s · {bridge}' },
       { name: 'Bridge progression (2)', secs: 60, cue: '5 holds of 5 s' },
       { name: 'Bridge progression (3)', secs: 60, cue: '5 holds of 5 s' },
     ],
@@ -214,6 +256,13 @@ export const ROUTINES = {
   },
 };
 
+// Flexibility progressions you log on the routine page (shown in the cues).
+export const FLEX_PROGRESS = {
+  gm: { label: 'Wide good morning weight', type: 'kg', start: 0, hint: 'Add 2.5 kg when 3 × 10 feels easy' },
+  straddle: { label: 'Straddle sit on', options: ['two yoga blocks', 'one yoga block', 'a folded mat', 'the floor'], start: 1, hint: 'Go lower when you can hinge forward easily' },
+  bridge: { label: 'Bridge level', options: ['Tabletop bridge', 'Glute bridge, arms overhead', 'Full bridge from the floor', 'Straight arms, weight over hands', 'Wall walk-downs'], start: 0, hint: 'Move up when 5 × 5 s feels solid' },
+};
+
 // Interval circuits: work/rest x exercises x rounds.
 export const CIRCUITS = {
   travel: {
@@ -240,10 +289,10 @@ export const ACTIVITIES = {
   gluteA: { name: 'Glute A', icon: 'glute', time: 'Daytime', session: 'gluteA' },
   gluteB: { name: 'Glute B', icon: 'glute', time: 'Daytime', session: 'gluteB' },
   upper: { name: 'Upper body · calisthenics', icon: 'upper', time: 'Daytime', session: 'upper' },
-  boulder: { name: 'Bouldering', icon: 'climb', time: 'Evening', detail: 'Portside O\'Connor with friends. Climb down rather than jumping off.', cooldown: 'cooldownClimb' },
+  boulder: { name: 'Bouldering', icon: 'climb', time: 'Evening', detail: 'Portside O\'Connor with friends. 20 min pre-climb mobility first. Climb down rather than jumping off.', pre: 'preClimb', cooldown: 'shouldersBridge' },
   yoga: { name: 'Yin & Yang yoga + 15 min flexibility', icon: 'yoga', time: '8:30 or 10am', detail: 'Portside O\'Connor. Then the 15-min pancake, bridge and handstand block.', routine: 'flex15' },
   cardioSat: { name: 'Run, coastal walk or swim', icon: 'run', time: 'Any time', detail: '40–50 min, easy pace.', cooldown: 'cooldownRun', cardio: true },
-  flexFull: { name: 'Flexibility session (full)', icon: 'yoga', time: 'Any time', detail: 'The 35–40 min solo session, since yoga was missed.', routine: 'flexFull' },
+  flexFull: { name: 'Full flexibility session', icon: 'yoga', time: '35–40 min', detail: 'Slow, long holds — still counts as your rest day. Target: at least one a week, any day.', routine: 'flexFull' },
   surf: { name: 'Surf', icon: 'surf', time: 'When it\'s good', detail: 'Mineral SPF 50 before and after. Rinse face with fresh water after.', pre: 'surfPre', cooldown: 'surfPost', cardio: true },
   rest: { name: 'Rest day', icon: 'rest', time: '', detail: 'Easy steps. Real rest.' },
   circuit: { name: 'Travel circuit', icon: 'upper', time: 'Any time', detail: '30 min, no equipment.', circuit: 'travel' },
@@ -257,13 +306,27 @@ export const DEFAULT_WEEK = [
   ['upper'],                // Thu
   ['gluteB'],               // Fri
   ['yoga', 'cardioSat'],    // Sat
-  ['rest'],                 // Sun
+  ['flexFull'],             // Sun (rest day + full flexibility session)
+];
+
+// Extra activities you can log on a day without changing the plan.
+export const EXTRAS = [
+  { id: 'surf', name: 'Surf', cat: 'surf' },
+  { id: 'run', name: 'Run', cat: 'run' },
+  { id: 'swim', name: 'Swim', cat: 'run' },
+  { id: 'walk', name: 'Walk or hike', cat: 'run' },
+  { id: 'soccer', name: 'Soccer', cat: 'run' },
+  { id: 'boulder', name: 'Bouldering', cat: 'climb' },
+  { id: 'yoga', name: 'Yoga or Pilates class', cat: 'yoga' },
+  { id: 'stretch', name: 'Stretching', cat: 'yoga' },
+  { id: 'gym', name: 'Gym, other', cat: 'upper' },
+  { id: 'other', name: 'Something else', cat: 'rest' },
 ];
 
 export const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const DAY_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-export const DROP_ORDER = ['Saturday flexibility block', 'Yoga class', 'Upper body', 'Glute B'];
+export const DROP_ORDER = ['Saturday 15-min flexibility block', 'Yoga class', 'Upper body', 'Glute B'];
 
 // ---------- Skincare ----------
 export const SKIN_AM = [

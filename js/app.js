@@ -1,7 +1,7 @@
 import {
   SESSIONS, ROUTINES, CIRCUITS, ACTIVITIES, DAY_NAMES, DAY_LONG, DROP_ORDER, SKIN_AM, SKIN_PM,
   DAILY_TICKS, WEEKLY_TICKS, FOOD_PRESETS, SOCIAL_RULES, MEAL_OPTIONS, TIMER_PRESETS, TARGETS,
-  MEALS, ROTATION, WEEKEND_BREAKFAST, CORE_LIST,
+  MEALS, ROTATION, WEEKEND_BREAKFAST, CORE_LIST, EXTRAS, FLEX_PROGRESS,
 } from './data.js';
 import { searchFoods, lookupBarcode, nutritionFor, canScan, scanBarcode } from './foods.js';
 import {
@@ -60,7 +60,32 @@ function markTodayDone(match) {
 }
 
 function catClass(key) {
+  if (key.startsWith('x:')) return `c-${EXTRAS.find((e) => e.id === key.slice(2))?.cat || 'rest'}`;
   return { gluteA: 'c-glute', gluteB: 'c-glute', upper: 'c-upper', boulder: 'c-climb', cardioMon: 'c-run', cardioSat: 'c-run', yoga: 'c-yoga', flexFull: 'c-yoga', mobility: 'c-yoga', surf: 'c-surf', rest: 'c-rest', circuit: 'c-upper' }[key] || '';
+}
+
+// Hearts mark things you complete; sparkles mark activities. Colour comes from the category class.
+const HEART = 'M12 20.6s-7.6-4.6-9.3-9.4C1.5 7.8 3.7 4.4 7.2 4.4c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.5 0 5.7 3.4 4.5 6.8-1.7 4.8-9.3 9.4-9.3 9.4z';
+const heart = (filled, cls = '') => `<svg class="heart ${filled ? 'on' : ''} ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${HEART}"/></svg>`;
+const sparkle = (cls = '') => `<svg class="sparkle ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2.5c.5 4.4 2.3 6.7 6.8 7.6-4.5.9-6.3 3.2-6.8 7.6-.5-4.4-2.3-6.7-6.8-7.6 4.5-.9 6.3-3.2 6.8-7.6z"/><path d="M18.5 14c.3 2 1.1 3 3 3.4-1.9.4-2.7 1.4-3 3.4-.3-2-1.1-3-3-3.4 1.9-.4 2.7-1.4 3-3.4z"/></svg>`;
+
+// Extra activities logged on a day (they don't change the plan).
+const extrasFor = (mon, d) => (week(mon).extras || {})[d] || [];
+const extraName = (id) => EXTRAS.find((e) => e.id === id)?.name || id;
+function dayItems(W, mon, d) {
+  return [...W.days[d], ...extrasFor(mon, d).map((id, i) => ({ key: `x:${id}`, extra: true, idx: i }))];
+}
+function itemDone(mon, d, x) { return x.extra || isDone(mon, d, x.key); }
+
+// Flexibility progress (good morning weight, straddle height, bridge level).
+function flexVal(id) { const v = S().flexProg?.[id]; return v === undefined ? FLEX_PROGRESS[id].start : v; }
+function flexText(id) { const f = FLEX_PROGRESS[id]; const v = flexVal(id); return f.type === 'kg' ? (v ? `${v} kg` : 'bodyweight') : f.options[v]; }
+function fillCues(r) {
+  return { ...r, steps: r.steps.map((st) => ({ ...st, cue: st.cue ? st.cue.replace(/\{(\w+)\}/g, (m, k) => (FLEX_PROGRESS[k] ? flexText(k) : m)) : st.cue })) };
+}
+function fullFlexDone(mon) {
+  const W = buildWeek(mon); const w = week(mon);
+  return !!w.fullFlexDone || W.days.some((list, i) => list.some((x) => x.key === 'flexFull' && isDone(mon, i, 'flexFull')));
 }
 
 // ---------- TODAY ----------
@@ -79,9 +104,11 @@ function viewToday() {
 
   html += foodTop(tk, wk > 0 && daysBetween(start, t) < 14 ? daysBetween(start, t) + 1 : 0);
 
-  html += `<section><h2>Today</h2>`;
+  html += `<section><div class="row-between"><h2>Today</h2><button class="linkbtn" data-act="day" data-d="${d}" data-mon="${mon}">+ Add extra activity</button></div>`;
   W.days[d].forEach((x) => { html += itemCard(x, mon, d); });
+  extrasFor(mon, d).forEach((id, i) => { html += extraCard(id, mon, d, i); });
   html += `</section>`;
+  html += flexTarget(mon);
 
   if (W.notes.length) html += `<div class="notes">${W.notes.map((n) => `<p>${esc(n)}</p>`).join('')}</div>`;
 
@@ -122,20 +149,37 @@ function itemCard(x, mon, d, compact = false) {
   if (a.session) btns.push(`<a class="btn primary" href="#/session/${a.session}">${S().active[`${a.session}|${ymd(addDays(parse(mon), d))}`] ? 'Continue' : 'Start'}</a>`);
   if (a.routine) btns.push(`<a class="btn primary" href="#/routine/${a.routine}">Start</a>`);
   if (a.circuit) btns.push(`<a class="btn primary" href="#/circuit/${a.circuit}">Start</a>`);
-  if (a.pre) btns.push(`<a class="btn" href="#/routine/${a.pre}">Pre-surf</a>`);
+  if (a.pre) btns.push(`<a class="btn" href="#/routine/${a.pre}">${a.key === 'surf' ? 'Pre-surf' : 'Pre-climb'}</a>`);
   if (a.cooldown) btns.push(`<a class="btn" href="#/routine/${a.cooldown}">${a.key === 'surf' ? 'Post-surf' : 'Cool-down'}</a>`);
-  btns.push(`<button class="btn ghost" data-act="done" data-d="${d}" data-k="${x.key}" data-mon="${mon}">${done ? 'Undo' : 'Mark done'}</button>`);
+  btns.push(`<button class="btn soft" data-act="done" data-d="${d}" data-k="${x.key}" data-mon="${mon}">${done ? 'Undo' : 'Mark done'}</button>`);
   }
   const sess = a.session ? SESSIONS[a.session] : null;
   return `<article class="item ${catClass(x.key)} ${done ? 'done' : ''} ${x.optional ? 'optional' : ''}">
     <div class="item-head"><div>
-      <div class="item-name">${esc(a.name)}${done ? ' <span class="ok">✓</span>' : ''}</div>
+      <div class="item-name">${sparkle()}<span>${esc(a.name)}</span>${done ? heart(true, 'done-heart') : ''}</div>
       <div class="item-meta">${[a.time, sess ? `${sess.minutes} min` : '', x.optional ? 'optional' : '', x.moved != null ? `moved from ${DAY_NAMES[x.moved]}` : ''].filter(Boolean).map(esc).join(' · ')}</div>
     </div></div>
     ${x.note ? `<p class="item-note">${esc(x.note)}</p>` : ''}
     ${!compact && a.detail ? `<p class="item-detail">${esc(a.detail)}</p>` : ''}
     <div class="btns">${btns.join('')}</div>
   </article>`;
+}
+
+function extraCard(id, mon, d, i) {
+  return `<article class="item ${catClass(`x:${id}`)} done extra">
+    <div class="item-head"><div>
+      <div class="item-name">${sparkle()}<span>${esc(extraName(id))}</span>${heart(true, 'done-heart')}</div>
+      <div class="item-meta">Extra · logged</div>
+    </div><button class="x-btn" data-act="xdel" data-mon="${mon}" data-d="${d}" data-i="${i}" aria-label="Remove">×</button></div>
+  </article>`;
+}
+
+function flexTarget(mon) {
+  const done = fullFlexDone(mon);
+  return `<a class="card target ${done ? 'met' : ''}" href="#/routine/flexFull">
+    <span class="c-yoga">${heart(done, 'big')}</span>
+    <div><b>Full flexibility session</b><div class="hint">${done ? 'Done this week — lovely.' : '0 of 1 this week · any day, Sunday by default'}</div></div>
+    <span class="arrow">›</span></a>`;
 }
 
 function weekStrip(W, mon, todayD) {
@@ -147,8 +191,8 @@ function weekStrip(W, mon, todayD) {
   <div class="strip">${W.days.map((list, i) => `<button class="sday ${i === todayD ? 'today' : ''}" data-act="day" data-d="${i}" data-mon="${mon}">
     <span class="sd-name">${DAY_NAMES[i]}</span>
     ${(w.surf || []).includes(i) ? '<span class="tag surf">surf</span>' : ''}${w.dateNight === i ? '<span class="tag date">date</span>' : ''}
-    ${list.map((x) => `<span class="dot ${catClass(x.key)} ${isDone(mon, i, x.key) ? 'done' : ''}" title="${esc(ACTIVITIES[x.key]?.name)}"></span>`).join('')}
-    <span class="sd-items">${list.map((x) => esc(shortName(x.key))).join('<br>')}</span>
+    <span class="sd-hearts">${dayItems(W, mon, i).map((x) => `<span class="${catClass(x.key)}">${heart(itemDone(mon, i, x))}</span>`).join('')}</span>
+    <span class="sd-items">${dayItems(W, mon, i).map((x) => esc(x.extra ? `+ ${extraName(x.key.slice(2))}` : shortName(x.key))).join('<br>')}</span>
   </button>`).join('')}</div></section>`;
 }
 const shortName = (k) => ({ cardioMon: 'Run/soccer', gluteA: 'Glute A', gluteB: 'Glute B', upper: 'Upper', boulder: 'Boulder', yoga: 'Yoga', cardioSat: 'Cardio', flexFull: 'Flex', surf: 'Surf', rest: 'Rest', circuit: 'Circuit', mobility: 'Mobility' }[k] || k);
@@ -157,12 +201,22 @@ function daySheet(mon, d) {
   const W = buildWeek(mon); const w = week(mon); const date = addDays(parse(mon), d);
   const surf = (w.surf || []).includes(d);
   const html = `<h3>${niceDate(date)}</h3>
-    <label class="switch"><input type="checkbox" data-s="surf" ${surf ? 'checked' : ''}><span>Surf this day</span></label>
+    <label class="switch"><input type="checkbox" data-s="surf" ${surf ? 'checked' : ''}><span>Surf instead<small>Reshuffles that day's session</small></span></label>
     <label class="switch"><input type="checkbox" data-s="date" ${w.dateNight === d ? 'checked' : ''}><span>Date night</span></label>
     <p class="hint">${d === 2 ? 'Date night on Wednesday moves bouldering to Sunday.' : 'Date night only changes the plan on a Wednesday.'}</p>
-    <div class="sheet-items">${W.days[d].map((x) => itemCard(x, mon, d, true)).join('')}</div>
+    <div class="sheet-items">${W.days[d].map((x) => itemCard(x, mon, d, true)).join('')}${extrasFor(mon, d).map((id, i) => extraCard(id, mon, d, i)).join('')}</div>
+    <h4 class="sheet-sub">Add an extra activity</h4>
+    <p class="hint">Logged on top of the plan — nothing moves.</p>
+    <div class="xchips">${EXTRAS.map((e) => `<button class="xchip c-${e.cat}" data-x="${e.id}">${sparkle()}${esc(e.name)}</button>`).join('')}</div>
     <button class="btn primary block" data-s="close">Done</button>`;
   sheet(html, (e) => {
+    const xBtn = e.target.closest('[data-x]');
+    if (xBtn) {
+      const w2 = week(mon); w2.extras = w2.extras || {}; w2.extras[d] = [...(w2.extras[d] || []), xBtn.dataset.x]; save();
+      toast(`${extraName(xBtn.dataset.x)} logged`); daySheet(mon, d); render(); return;
+    }
+    const xDel = e.target.closest('[data-act="xdel"]');
+    if (xDel) { removeExtra(mon, d, +xDel.dataset.i); daySheet(mon, d); render(); return; }
     const doneBtn = e.target.closest('[data-act="done"]');
     if (doneBtn) {
       setDone(mon, d, doneBtn.dataset.k, !isDone(mon, d, doneBtn.dataset.k));
@@ -179,6 +233,11 @@ function daySheet(mon, d) {
       w.dateNight = e.target.checked ? d : null; save(); daySheet(mon, d); render();
     }
   });
+}
+
+function removeExtra(mon, d, i) {
+  const w = week(mon); if (!w.extras?.[d]) return;
+  w.extras[d].splice(i, 1); save();
 }
 
 function tierSheet() {
@@ -366,7 +425,8 @@ function finishSession() {
 
 // ---------- ROUTINE & CIRCUIT ----------
 function viewRoutine(id) {
-  const r = ROUTINES[id]; if (!r) return notFound();
+  const r0 = ROUTINES[id]; if (!r0) return notFound();
+  const r = fillCues(r0);
   const total = routinePhases(r).reduce((a, p) => a + p.secs, 0);
   let lastPart = null;
   const rows = r.steps.map((s) => {
@@ -376,9 +436,26 @@ function viewRoutine(id) {
   }).join('');
   return `<header class="top sub"><a class="back" href="javascript:history.back()">‹</a><div><div class="eyebrow">Guided · about ${Math.round(total / 60)} min</div><h1>${esc(r.name)}</h1></div></header>
     ${r.note ? `<p class="notes"><span>${esc(r.note)}</span></p>` : ''}
+    ${r.track ? progressCard(r.track) : ''}
     <button class="btn primary block big" data-act="play" data-id="${id}">▶ Start</button>
     <ul class="steps">${rows}</ul>
     <p class="hint center">The screen stays on while it runs. Beeps at 3-2-1, double beep to switch sides.</p>`;
+}
+
+function progressCard(ids) {
+  return `<section class="card prog"><h2>Your levels</h2>${ids.map((k) => {
+    const f = FLEX_PROGRESS[k]; const v = flexVal(k);
+    const ctl = f.type === 'kg'
+      ? `<div class="kgstep"><button data-act="fp" data-k="${k}" data-v="-2.5" aria-label="Less">−</button><b>${v ? `${v} kg` : 'Bodyweight'}</b><button data-act="fp" data-k="${k}" data-v="2.5" aria-label="More">+</button></div>`
+      : `<select data-act="fpsel" data-k="${k}">${f.options.map((o, i) => `<option value="${i}" ${i === v ? 'selected' : ''}>${esc(o[0].toUpperCase() + o.slice(1))}</option>`).join('')}</select>`;
+    return `<div class="prog-row"><div><span>${esc(f.label)}</span><small>${esc(f.hint)}</small></div>${ctl}</div>`;
+  }).join('')}</section>`;
+}
+
+function setFlex(k, v) {
+  const st = S(); st.flexProg = st.flexProg || {}; st.flexLog = st.flexLog || [];
+  if (st.flexProg[k] === v) return;
+  st.flexProg[k] = v; st.flexLog.push({ date: ymd(today()), k, v }); save();
 }
 
 function viewCircuit(id) {
@@ -397,8 +474,8 @@ function viewTrain() {
   const hist = [...S().sessions].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 8);
   return `<header class="top"><div><div class="eyebrow">Sessions & routines</div><h1>Train</h1></div></header>
     <section><h2>Gym sessions</h2>${sess}</section>
-    <section><h2>Flexibility</h2>${r(['flexFull', 'flex15'])}</section>
-    <section><h2>Cool-downs</h2>${r(['cooldownGlute', 'cooldownClimb', 'cooldownRun'])}</section>
+    <section><h2>Flexibility</h2>${r(['flexFull', 'hipsPancake', 'shouldersBridge', 'flex15'])}</section>
+    <section><h2>Climbing and running</h2>${r(['preClimb', 'cooldownRun'])}</section>
     <section><h2>Surf</h2>${r(['surfPre', 'surfPost'])}</section>
     <section><h2>Travel</h2><a class="card linkcard" href="#/circuit/travel"><div><b>Travel circuit</b><div class="hint">40/20 × 9 × 3 rounds · no equipment</div></div><span class="arrow">›</span></a>${r(['dailyMobility'])}</section>
     <section><h2>Recent</h2>${hist.length ? `<ul class="list">${hist.map((h) => `<li><span>${esc(SESSIONS[h.session]?.name || h.session)}</span><span class="hint">${shortDate(h.date)}</span></li>`).join('')}</ul>` : '<p class="hint">Finished sessions show up here.</p>'}</section>`;
@@ -771,7 +848,15 @@ $app.addEventListener('click', (e) => {
     case 'set': case 'hold': return sessionAction(act, el);
     case 'finish': return finishSession();
     case 'discard': if (confirm('Discard this session?')) { delete st.active[`${view.session.id}|${view.session.dk}`]; save(); stopRest(); location.hash = '#/today'; } return;
-    case 'play': { const id = el.dataset.id; return runSequence(routinePhases(ROUTINES[id]), { title: ROUTINES[id].name, onDone: () => { markTodayDone((k, a) => a && a.routine === id); } }); }
+    case 'play': {
+      const id = el.dataset.id;
+      return runSequence(routinePhases(fillCues(ROUTINES[id])), { title: ROUTINES[id].name, onDone: () => {
+        markTodayDone((k, a) => a && a.routine === id);
+        if (id === 'flexFull') { week(ymd(mondayOf(today()))).fullFlexDone = true; save(); }
+      } });
+    }
+    case 'fp': { const k = el.dataset.k; setFlex(k, Math.max(0, Math.round((flexVal(k) + +el.dataset.v) * 10) / 10)); return render(); }
+    case 'xdel': { removeExtra(el.dataset.mon, +el.dataset.d, +el.dataset.i); return render(); }
     case 'playc': { const id = el.dataset.id; return runSequence(circuitPhases(CIRCUITS[id]), { title: CIRCUITS[id].name, onDone: () => { markTodayDone((k, a) => a && a.circuit === id); } }); }
     case 'preset': { const p = TIMER_PRESETS[+el.dataset.i]; st.timer = { ...p.c, sel: +el.dataset.i }; save(); return render(); }
     case 'adj': { const C = timerConf(); const [lo, hi, step] = LIM[el.dataset.k]; const v = C[el.dataset.k] + step * +el.dataset.v; if (v >= lo && v <= hi) { C[el.dataset.k] = v; C.sel = -1; save(); render(); } return; }
@@ -849,6 +934,7 @@ $app.addEventListener('change', (e) => {
   if (act === 'prep') { st.prep[el.dataset.id] = el.checked; save(); el.closest('.tick').classList.toggle('on', el.checked); }
   if (act === 'shop') { const m = el.dataset.mon; st.shop[m] = st.shop[m] || {}; st.shop[m][el.dataset.id] = el.checked; save(); el.closest('.tick').classList.toggle('on', el.checked); }
   if (act === 'menu') { const m = el.dataset.mon; st.menus[m] = { ...menuFor(m), [el.dataset.slot]: el.value }; save(); render(); }
+  if (act === 'fpsel') { setFlex(el.dataset.k, +el.value); render(); }
   if (act === 'level') { st.levels[el.dataset.ex] = +el.value; save(); }
   if (['w', 'r', 'secs'].includes(act)) {
     const { id, dk } = view.session; const row = st.active[`${id}|${dk}`].sets[el.dataset.ex][+el.dataset.i];

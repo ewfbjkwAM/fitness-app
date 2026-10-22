@@ -283,12 +283,11 @@ export const SKIN_PM = {
 };
 
 // ---------- Daily ticks ----------
+// Chocolate and protein live in the food log, not here.
 export const DAILY_TICKS = [
-  { id: 'choc', label: '25 g dark chocolate', always: true },
   { id: 'ankle', label: 'Left ankle balance 30–60 s' },
   { id: 'water', label: '2.5–3 L water' },
   { id: 'supps', label: 'Creatine, omega-3, multivitamin' },
-  { id: 'protein', label: 'Protein 140–150 g' },
   { id: 'sleep', label: '7–9 h sleep' },
 ];
 export const WEEKLY_TICKS = {
@@ -369,14 +368,38 @@ export const MEAL_OPTIONS = [
   ['Dinner', 'A: Tofu or tempeh stir-fry with rice/noodles + edamame (35 g)', 'B: Lentil bolognese + wholemeal pasta + parmesan (35 g)', 'C: Egg fried rice — 3 eggs + edamame + veg (30 g)', 'D: Chickpea or lentil curry + rice + yogurt (30 g)', 'E: Chicken or fish + sweet potato + veg (40 g)'],
 ];
 
-export const SHOPPING = [
-  ['Protein', ['3 blocks firm tofu', '1 tempeh', '30 eggs', '4 cans tuna in water', '1 kg plain Greek yogurt', '500 g cottage cheese', 'Protein powder', 'Chicken or fish on special']],
-  ['Legumes', ['3–4 cans lentils', '2 cans black beans', '1–2 cans chickpeas', '1 kg frozen edamame']],
-  ['Carbs', ['1 kg rolled oats', '2 kg rice', 'Wholemeal wraps × 2 packs', '500 g wholemeal pasta', '1 loaf wholemeal bread', '1–2 kg sweet potato or potatoes']],
-  ['Fruit', ['10–12 bananas', '1 kg frozen mixed berries']],
-  ['Veg', ['2 kg frozen broccoli', '1 kg frozen mixed veg', '1 kg frozen stir-fry veg', 'Salad leaves', 'Tomatoes', '2 jars passata']],
-  ['Dairy', ['500 g cheese block', 'Small parmesan']],
-  ['Pantry', ['Peanut butter', 'Olive oil', 'Low-sodium soy sauce', 'Sriracha', 'Salsa', 'Curry paste', 'Garlic powder', 'Paprika', 'Cinnamon', 'Rice cakes']],
+// ---------- Weekly menu ----------
+// Each week: 1 breakfast (weekdays), 1 lunch, 2 dinners (Mon–Wed, Thu–Sun).
+// Weekends: eggs on toast for breakfast.
+export const MEALS = {
+  breakfast: {
+    A: { name: 'Oats + protein + banana + peanut butter', add: [] },
+    B: { name: 'Eggs + whites on wholemeal toast + fruit', add: ['1½ dozen eggs', 'Wholemeal bread'] },
+    C: { name: 'Greek yogurt bowl', add: ['Extra 1 kg Greek yogurt'] },
+  },
+  lunch: {
+    A: { name: 'Tofu wrap', add: ['3 blocks firm tofu', 'Wholemeal wraps', 'Cheese block'] },
+    B: { name: 'Tuna wrap or rice bowl', add: ['10 cans tuna in water', 'Wholemeal wraps'] },
+    C: { name: 'Burrito bowl', add: ['3 cans black beans', 'Salsa', '1 kg chicken (or 2 blocks tofu)'] },
+  },
+  dinner: {
+    A: { name: 'Tofu or tempeh stir-fry', add: ['2 blocks tofu or tempeh', 'Frozen stir-fry veg', 'Noodles', 'Frozen edamame'] },
+    B: { name: 'Lentil bolognese (freeze half)', add: ['3 cans lentils (or 500 g mince on special)', '2 jars passata', 'Wholemeal pasta', 'Parmesan'] },
+    BF: { name: 'Lentil bolognese from the freezer', add: ['Wholemeal pasta'] },
+    C: { name: 'Egg fried rice', add: ['Extra 1 dozen eggs', 'Frozen edamame'] },
+    D: { name: 'Chickpea or lentil curry', add: ['3 cans chickpeas or lentils', 'Curry paste'] },
+    E: { name: 'Chicken or fish + sweet potato', add: ['1 kg chicken or fish (on special)', 'Sweet potato'] },
+  },
+};
+export const ROTATION = [
+  { b: 'A', l: 'A', d1: 'A', d2: 'B' },
+  { b: 'A', l: 'B', d1: 'D', d2: 'C' },
+  { b: 'C', l: 'C', d1: 'BF', d2: 'E' },
+];
+export const WEEKEND_BREAKFAST = { name: 'Eggs on toast (weekends)', add: ['Extra ½ dozen eggs', 'Wholemeal bread'] };
+export const CORE_LIST = [
+  ['Breakfast and snacks', ['Rolled oats', 'Protein powder', 'Bananas', 'Frozen berries', '1 dozen eggs', '1 kg Greek yogurt', 'Peanut butter']],
+  ['Staples', ['Rice', 'Frozen broccoli', 'Frozen mixed veg', 'Salad leaves', 'Soy sauce', 'Spices (paprika, garlic powder, cinnamon)']],
   ['Treat', ['175 g dark chocolate (70%+)']],
 ];
 

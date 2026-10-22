@@ -16,7 +16,9 @@ const blank = () => ({
   measures: [],   // {date, waist, hips, chest, thigh}
   flex: [],       // {date, pancake, bridge}
   food: {},       // ymd -> [{name,kcal,p}]
-  shopping: {},
+  shop: {},       // mondayYmd -> { item: true } ticked shopping items
+  menus: {},      // mondayYmd -> { b, l, d1, d2 } overrides to the rotation
+  recentFoods: [],// last foods added from search, Claude or custom
   prep: {},       // before-week-1 checklist
   timer: null,    // last free-timer config
 });

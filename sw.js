@@ -1,8 +1,8 @@
 // Offline support. Bump VERSION when files change so phones pick up the update.
-const VERSION = 'fp-v1';
+const VERSION = 'fp-v2';
 const FILES = [
   './', './index.html', './manifest.webmanifest', './css/styles.css',
-  './js/app.js', './js/data.js', './js/store.js', './js/schedule.js', './js/timer.js',
+  './js/app.js', './js/data.js', './js/store.js', './js/schedule.js', './js/timer.js', './js/media.js', './js/foods.js',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png',
 ];
 

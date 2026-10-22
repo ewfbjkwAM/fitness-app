@@ -1,5 +1,7 @@
 // Timer engine: full-screen sequences (routines, circuits, holds) and a
-// small rest bar for lifting. Keeps the screen awake while running.
+// small rest bar for lifting. Keeps the screen awake while running and shows
+// a phone notification with controls (see media.js).
+import { mediaStart, mediaUpdate, mediaStop, mediaPlayState } from './media.js';
 
 let ac = null;
 export function beep(freq = 880, dur = 0.12, vol = 0.3) {
@@ -65,14 +67,30 @@ export function runSequence(phases, { title = '', onDone, onEnd } = {}) {
   el.addEventListener('click', (e) => {
     const a = e.target.closest('[data-a]')?.dataset.a;
     if (!a || !seq) return;
-    if (a === 'pause') { seq.paused = !seq.paused; seq.last = performance.now(); draw(); }
+    if (seq.finished && a !== 'end') return;
+    if (a === 'pause') setPaused(!seq.paused);
     if (a === 'skip') next(true);
-    if (a === 'back') { seq.i = Math.max(0, seq.i - 1); seq.left = seq.phases[seq.i].secs; enter(); }
+    if (a === 'back') back();
     if (a === 'end') stopSequence(false);
+  });
+  mediaStart('seq', {
+    play: () => setPaused(false),
+    pause: () => setPaused(true),
+    next: () => seq && !seq.finished && next(true),
+    prev: () => seq && !seq.finished && back(),
+    stop: () => stopSequence(false),
   });
   enter();
   seq.tick = setInterval(tick, 200);
 }
+
+function setPaused(v) {
+  if (!seq || seq.finished) return;
+  seq.paused = v; seq.last = performance.now();
+  mediaPlayState('seq', !v);
+  draw();
+}
+function back() { seq.i = Math.max(0, seq.i - 1); enter(); }
 
 function enter() {
   const p = seq.phases[seq.i];
@@ -83,16 +101,31 @@ function enter() {
 }
 
 function tick() {
-  if (!seq || seq.paused) { if (seq) seq.last = performance.now(); return; }
+  if (!seq || seq.finished) return;
+  if (seq.paused) { seq.last = performance.now(); return; }
   const now = performance.now();
   seq.left -= (now - seq.last) / 1000;
   seq.last = now;
+  if (seq.left <= 0) {
+    // Catch up in one jump: skip every phase that ended while the phone was
+    // busy elsewhere, instead of stepping (and beeping) through each one.
+    let over = -seq.left;
+    let i = seq.i + 1;
+    while (i < seq.phases.length && over >= seq.phases[i].secs) { over -= seq.phases[i].secs; i++; }
+    if (i >= seq.phases.length) { seq.i = seq.phases.length - 1; next(false); return; }
+    seq.i = i - 1;
+    next(false);
+    seq.left = seq.phases[seq.i].secs - over;
+    seq.lastWhole = Math.ceil(seq.left);
+    draw();
+    return;
+  }
   const whole = Math.ceil(seq.left);
   if (whole !== seq.lastWhole) {
     seq.lastWhole = whole;
     if (whole <= 3 && whole > 0) { beep(880, 0.08, 0.25); buzz(40); }
   }
-  if (seq.left <= 0) next(false); else draw();
+  draw();
 }
 
 function next(manual) {
@@ -126,6 +159,15 @@ function draw() {
   el.querySelector('.seq-fill').style.width = `${Math.max(0, (s.left / p.secs) * 100)}%`;
   el.querySelector('[data-a="pause"]').textContent = s.paused ? 'Resume' : 'Pause';
   el.classList.toggle('paused', s.paused);
+  const kindName = { prep: 'Get ready', work: 'Work', rest: 'Rest', switch: 'Switch sides', hold: 'Hold', stretch: 'Stretch' }[p.kind || 'work'];
+  mediaUpdate('seq', {
+    title: `${fmt(s.left)} · ${p.label || kindName}`,
+    artist: [kindName, p.sub].filter(Boolean).join(' · '),
+    album: s.title || 'Fitness Plan',
+    duration: p.secs,
+    position: p.secs - s.left,
+    playing: !s.paused,
+  });
 }
 
 function finishScreen() {
@@ -140,6 +182,7 @@ function finishScreen() {
   el.querySelector('.seq-fill').style.width = '0%';
   el.querySelector('.seq-ctrls').innerHTML = '<button class="sbtn wide" data-a="end">Close</button>';
   seq.finished = true;
+  mediaStop('seq');
   letSleep();
 }
 
@@ -147,6 +190,7 @@ export function stopSequence(silent) {
   if (!seq) return;
   clearInterval(seq.tick);
   if (!seq.finished) letSleep();
+  mediaStop('seq');
   const end = seq.onEnd;
   seq.el.remove();
   document.body.classList.remove('noscroll');
@@ -165,26 +209,41 @@ export function startRest(secs, label = 'Rest') {
   el.innerHTML = `<div class="rb-fill"></div><div class="rb-row"><div><div class="rb-label"></div><div class="rb-time"></div></div>
     <div class="rb-btns"><button data-r="-15">−15</button><button data-r="15">+15</button><button data-r="skip">Skip</button></div></div>`;
   document.body.appendChild(el);
-  rest = { total: secs, end: performance.now() + secs * 1000, el, lastWhole: secs };
+  rest = { total: secs, end: performance.now() + secs * 1000, el, lastWhole: secs, label };
+  mediaStart('rest', {
+    pause: () => { if (rest && !rest.paused) { rest.paused = true; rest.pausedLeft = (rest.end - performance.now()) / 1000; drawRest(); } },
+    play: () => { if (rest && rest.paused) { rest.paused = false; rest.end = performance.now() + rest.pausedLeft * 1000; mediaPlayState('rest', true); drawRest(); } },
+    next: () => stopRest(),
+    stop: () => stopRest(),
+    forward: () => adjustRest(15),
+    back: () => adjustRest(-15),
+  });
   el.querySelector('.rb-label').textContent = label;
   el.addEventListener('click', (e) => {
     const r = e.target.closest('[data-r]')?.dataset.r; if (!r) return;
     if (r === 'skip') return stopRest();
-    rest.end += Number(r) * 1000; rest.total = Math.max(5, rest.total + Number(r));
-    drawRest();
+    adjustRest(Number(r));
   });
   drawRest();
   rest.t = setInterval(drawRest, 250);
 }
 
+function adjustRest(d) {
+  if (!rest) return;
+  if (rest.paused) rest.pausedLeft = Math.max(1, rest.pausedLeft + d); else rest.end += d * 1000;
+  rest.total = Math.max(5, rest.total + d);
+  drawRest();
+}
+
 function drawRest() {
   if (!rest) return;
-  const left = (rest.end - performance.now()) / 1000;
+  const left = rest.paused ? rest.pausedLeft : (rest.end - performance.now()) / 1000;
   const whole = Math.ceil(left);
-  if (whole !== rest.lastWhole) { rest.lastWhole = whole; if (whole <= 3 && whole > 0) { beep(880, 0.08, 0.25); buzz(40); } }
+  if (!rest.paused && whole !== rest.lastWhole) { rest.lastWhole = whole; if (whole <= 3 && whole > 0) { beep(880, 0.08, 0.25); buzz(40); } }
   if (left <= 0) { beep(1046, 0.3, 0.4); buzz([200, 80, 200]); stopRest(); return; }
-  rest.el.querySelector('.rb-time').textContent = fmt(left);
+  rest.el.querySelector('.rb-time').textContent = rest.paused ? `${fmt(left)} · paused` : fmt(left);
   rest.el.querySelector('.rb-fill').style.width = `${(left / rest.total) * 100}%`;
+  mediaUpdate('rest', { title: `${fmt(left)} · Rest`, artist: rest.label, album: 'Fitness Plan', duration: rest.total, position: rest.total - left, playing: !rest.paused });
 }
 
 export function stopRest() {
@@ -192,6 +251,7 @@ export function stopRest() {
   clearInterval(rest.t);
   rest.el.remove();
   rest = null;
+  mediaStop('rest');
   letSleep();
 }
 

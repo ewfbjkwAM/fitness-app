@@ -244,3 +244,39 @@ h3 { font-size: 15px; font-weight: 650; margin: 14px 0 6px; }
 
 @media (min-width: 520px) { .sd-items { font-size: 11.5px; } }
 @media (max-width: 360px) { .grid4 { grid-template-columns: 1fr 1fr; } .skin { grid-template-columns: 1fr; } }
+
+/* v2 */
+.food-top { margin-top: 14px; }
+.food-top h2 { margin-bottom: 4px; }
+.ft-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; font-size: 14px; }
+.ft-row b { font-weight: 650; font-variant-numeric: tabular-nums; }
+.ft-row small { color: var(--muted); font-weight: 500; }
+.ft-audit { margin-top: 10px; color: var(--accent); font-weight: 600; }
+.weekhead { align-items: center; }
+.weekhead h2 { margin: 0; }
+.wk-arrow { width: 36px; height: 36px; border-radius: 50%; background: var(--surface); box-shadow: var(--shadow); font-size: 20px; line-height: 1; }
+.wk-arrow:disabled { opacity: .3; }
+.wk-hint { margin: 6px 0 10px; text-align: center; }
+.fsearch { display: flex; gap: 6px; margin-bottom: 10px; }
+.fsearch input { flex: 1; min-width: 0; padding: 11px 12px; border-radius: 12px; border: none; background: var(--surface); box-shadow: var(--shadow); font-size: 16px; }
+.fsearch .btn { padding: 10px 12px; }
+.ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.results li { padding: 0; }
+.res { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 0; font-size: 14px; }
+.res-n { text-align: right; white-space: nowrap; font-weight: 600; }
+.claude b { display: block; }
+.claude .hint { margin-top: 6px; }
+.am { display: block; font-size: 13px; color: var(--muted); margin-top: 10px; }
+.am input { width: 100%; padding: 11px 12px; border-radius: 10px; border: none; background: var(--surface2); font-size: 16px; margin-top: 6px; color: var(--text); }
+.sheet .am input { background: var(--surface); }
+.am-total { margin-top: 14px; font-size: 16px; text-align: center; }
+.am-total b { font-size: 22px; font-weight: 650; }
+.seg.two-seg { grid-template-columns: 1fr 1fr; }
+.seg a[data-act], .seg a[data-m] { cursor: pointer; }
+.scanbox { position: relative; border-radius: 16px; overflow: hidden; background: #000; aspect-ratio: 4 / 3; margin-top: 4px; }
+.scanbox video { width: 100%; height: 100%; object-fit: cover; }
+.scanline { position: absolute; left: 10%; right: 10%; top: 50%; height: 2px; background: var(--accent); box-shadow: 0 0 0 1px rgba(255,255,255,.4); }
+.menu { display: grid; gap: 10px; margin-top: 8px; }
+.menu label { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.menu select { width: 100%; padding: 10px; font-size: 15px; }
+.sheet .btns { margin-top: 10px; }

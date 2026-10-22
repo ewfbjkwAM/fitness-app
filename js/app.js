@@ -458,8 +458,9 @@ function foodTab() {
       <div class="two"><input id="cf-kcal" type="number" inputmode="numeric" placeholder="kcal (estimate)"><input id="cf-p" type="number" inputmode="numeric" placeholder="protein g"></div>
       <button class="btn primary block" data-act="fcustom">Add</button></div>
     <div class="card claude"><b>Takeaway or a photo?</b>
-      <p class="hint">Send a photo or description to Claude in your Fitness Plan project. Claude replies with an "Add to my food log" link — tap it and the entry opens here to confirm.</p>
-      <a class="btn block" href="https://claude.ai/" target="_blank" rel="noopener">Open Claude</a></div>
+      <p class="hint">Opens Claude with the instructions already written. Add your photo or describe what you ate, then send. Claude replies with an "Add to my food log" link — tap it to confirm here.</p>
+      <button class="btn primary block" data-act="askclaude">Ask Claude</button>
+      <p class="hint">If the message box opens empty, long-press it and paste — the instructions are copied.</p></div>
     </section>`;
 }
 
@@ -778,6 +779,13 @@ $app.addEventListener('click', (e) => {
     case 'fday': { foodDate = ymd(addDays(parse(foodDate), +el.dataset.v)); return render(); }
     case 'fadd': { const f = FOOD_PRESETS[+el.dataset.g].items[+el.dataset.i]; foodFor(foodDate).push({ name: f.name, kcal: f.kcal, p: f.p }); save(); toast(`Added ${f.name}`); return render(); }
     case 'fscan': return scanSheet();
+    case 'askclaude': {
+      const base = `${location.origin}${location.pathname}`;
+      const prompt = `Estimate the calories and protein for the food below. Use the brand's or restaurant's published numbers if you know them, otherwise a realistic estimate. Keep the reply short. End with a link in exactly this format so I can log it in my food tracker (URL-encode the name, whole numbers only):\n${base}#/add?n=NAME&k=KCAL&p=PROTEIN\n\nWhat I ate: `;
+      try { navigator.clipboard && navigator.clipboard.writeText(prompt).catch(() => {}); } catch (e) { /* clipboard blocked */ }
+      window.open(`https://claude.ai/new?q=${encodeURIComponent(prompt)}`, '_blank', 'noopener');
+      return;
+    }
     case 'fpick': return amountSheet(search.results[+el.dataset.i]);
     case 'frecent': { const f = st.recentFoods[+el.dataset.i]; addFood(foodDate, f, true); toast(`Added ${f.name}`); return render(); }
     case 'addlink': {

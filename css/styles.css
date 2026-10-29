@@ -377,3 +377,21 @@ h1 { font-family: var(--serif); font-weight: 500; font-size: 30px; letter-spacin
 .kgstep { display: flex; align-items: center; gap: 8px; }
 .kgstep button { width: 34px; height: 34px; border-radius: 50%; background: var(--plum-soft); color: var(--plum-ink); font-size: 18px; }
 .kgstep b { min-width: 84px; text-align: center; font-size: 14px; }
+
+/* v5: timed calisthenics */
+.card.block .block-name { display: flex; align-items: center; gap: 6px; font-family: var(--serif); font-weight: 500; font-size: 20px; margin-top: 2px; }
+.card.block.done { background: var(--plum-soft); }
+.block-list { list-style: none; margin: 10px 0 4px; }
+.block-list li { padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.block-list li:first-child { border-top: none; }
+.block-list small { display: block; color: var(--muted); font-size: 12.5px; }
+.loglist .logrow { padding: 12px 0; border-top: 1px solid var(--line); }
+.loglist .logrow:first-of-type { border-top: none; }
+.logrow-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.logrow-head b { font-weight: 650; }
+.sugg-inline { font-size: 12px; color: var(--plum-ink); background: var(--plum-soft); padding: 2px 8px; border-radius: 99px; }
+.lvl-sel { margin-top: 6px; font-size: 13px; padding: 6px 8px; }
+.logboxes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.num.xs { width: 50px; padding: 9px 4px; }
+.card .logboxes input.num { width: 54px; margin-top: 0; padding: 9px 4px; }
+.card .logboxes input.num.sm { width: 64px; }

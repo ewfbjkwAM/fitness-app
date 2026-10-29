@@ -9,7 +9,7 @@ import {
   planWeek, week, day, foodFor,
 } from './store.js';
 import { buildWeek, nightType } from './schedule.js';
-import { runSequence, startRest, stopRest, routinePhases, circuitPhases, intervalPhases, fmt } from './timer.js';
+import { runSequence, startRest, stopRest, routinePhases, circuitPhases, intervalPhases, fmt, setSoundMode } from './timer.js';
 
 const $app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -329,6 +329,7 @@ function viewSession(id, dateArg) {
   }
   const draft = initDraft(id, dk);
   view.session = { id, dk, past };
+  if (sess.blocks) return viewTimedSession(sess, id, draft, dk, past);
   const doneSets = Object.values(draft.sets).flat().filter((s) => s.done).length;
   const allSets = Object.values(draft.sets).flat().length;
   let html = `<header class="top sub"><a class="back" href="#/today">‹</a><div><div class="eyebrow">${past ? `Logging for ${esc(niceDate(parse(dk)))}` : `${esc(sess.sub)} · ~${sess.minutes} min`}</div><h1>${esc(sess.name)}</h1></div></header>
@@ -341,6 +342,71 @@ function viewSession(id, dateArg) {
   <button class="btn primary block big" data-act="finish">Finish session</button>
   <button class="btn ghost block" data-act="discard">Discard</button>`;
   return html;
+}
+
+// ---------- timed (calisthenics) sessions ----------
+function blockPhases(sess, block) {
+  const exById = Object.fromEntries(sess.exercises.map((e) => [e.id, e]));
+  const first = exById[block.groups[0].items[0].ex];
+  const out = [{ label: first.name, sub: 'Get ready', secs: 10, kind: 'prep' }];
+  block.groups.forEach((g, gi) => {
+    for (let r = 1; r <= g.rounds; r++) {
+      g.items.forEach((it, ii) => {
+        const ex = exById[it.ex]; const hold = ex.type === 'hold';
+        const secs = hold ? (S().holdSecs[ex.id] ?? ex.secs) : it.work;
+        const lvl = ex.levels ? ex.levels[S().levels[ex.id] ?? 0] : '';
+        out.push({ label: ex.name, sub: [`${g.label} · round ${r} of ${g.rounds}`, hold ? `Hold ${secs} s` : it.cue, lvl].filter(Boolean).join(' · '), secs, kind: hold ? 'hold' : 'work' });
+        const lastItem = ii === g.items.length - 1;
+        if (lastItem && r === g.rounds) {
+          const ng = block.groups[gi + 1];
+          if (ng) out.push({ label: exById[ng.items[0].ex].name, sub: `Rest · next: ${ng.label}`, secs: g.after || 60, kind: 'rest' });
+        } else {
+          const nx = lastItem ? g.items[0] : g.items[ii + 1];
+          out.push({ label: exById[nx.ex].name, sub: 'Rest · next up', secs: it.rest, kind: 'rest' });
+        }
+      });
+    }
+  });
+  return out;
+}
+
+function viewTimedSession(sess, id, draft, dk, past) {
+  const exById = Object.fromEntries(sess.exercises.map((e) => [e.id, e]));
+  const parts = draft.parts || {};
+  let html = `<header class="top sub"><a class="back" href="#/today">‹</a><div><div class="eyebrow">${past ? `Logging for ${esc(niceDate(parse(dk)))}` : `${esc(sess.sub)} · ~${sess.minutes} min + cool-down`}</div><h1>${esc(sess.name)}</h1></div></header>
+  ${sess.note ? `<p class="notes"><span>${esc(sess.note)}</span></p>` : ''}
+  <a class="card linkcard" href="#/routine/${sess.warmup}"><div><b>Warm-up</b><div class="hint">${esc(ROUTINES[sess.warmup].name)} · guided</div></div><span class="arrow">▶</span></a>`;
+  if (!past) {
+    sess.blocks.forEach((b, bi) => {
+      const mins = Math.round(blockPhases(sess, b).reduce((a, ph) => a + ph.secs, 0) / 60);
+      html += `<article class="card block ${parts[b.id] ? 'done' : ''}">
+        <div class="row-between"><div><div class="eyebrow">Part ${bi + 1} · ${mins} min</div><b class="block-name">${esc(b.name)}${parts[b.id] ? heart(true, 'done-heart') : ''}</b></div></div>
+        <ul class="block-list">${b.groups.map((g) => `<li><span>${esc(g.label)} × ${g.rounds}</span><small>${g.items.map((it) => esc(exById[it.ex].name)).join(' → ')}</small></li>`).join('')}</ul>
+        <button class="btn ${parts[b.id] ? 'soft' : 'primary'} block" data-act="block" data-b="${bi}">${parts[b.id] ? 'Run again' : '▶ Start timer'}</button>
+      </article>`;
+    });
+  }
+  html += `<section class="card loglist"><h2>Log what you did</h2><p class="hint">Filled in from last time — change anything that was different. Each box is one round.</p>
+    ${sess.exercises.map((ex) => timedLogRow(ex, draft, dk)).join('')}</section>
+  <a class="card linkcard" href="#/routine/${sess.cooldown}"><div><b>Cool-down</b><div class="hint">${esc(ROUTINES[sess.cooldown].name)} · guided</div></div><span class="arrow">▶</span></a>
+  <button class="btn primary block big" data-act="finish">Finish session</button>
+  <button class="btn ghost block" data-act="discard">Discard</button>`;
+  return html;
+}
+
+function timedLogRow(ex, draft, dk) {
+  const rows = draft.sets[ex.id]; const lvl = S().levels[ex.id] ?? 0;
+  const unit = ex.type === 'hold' ? 's' : ex.unit ? '' : ex.each ? 'each' : 'reps';
+  const box = (r, i) => ex.type === 'hold'
+    ? `<input class="num xs" type="number" inputmode="numeric" value="${esc(r.secs)}" data-act="secs" data-ex="${ex.id}" data-i="${i}" aria-label="Round ${i + 1} seconds">`
+    : `<input class="num xs" type="number" inputmode="numeric" value="${esc(r.r)}" data-act="r" data-ex="${ex.id}" data-i="${i}" aria-label="Round ${i + 1}">`;
+  const last = lastFor(ex.id, dk);
+  return `<div class="logrow">
+    <div class="logrow-head"><b>${esc(ex.name)}</b>${draft.sugg[ex.id] ? `<span class="sugg-inline">${esc(draft.sugg[ex.id])}</span>` : ''}</div>
+    ${ex.levels ? `<select data-act="level" data-ex="${ex.id}" class="lvl-sel">${ex.levels.map((l, i) => `<option value="${i}" ${i === lvl ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>` : ''}
+    <div class="logboxes">${ex.type === 'lift' ? `<input class="num sm" type="number" inputmode="decimal" step="0.5" value="${esc(rows[0].w)}" data-act="wall" data-ex="${ex.id}" aria-label="Weight"><span class="x">kg ·</span>` : ''}${rows.map(box).join('')}<span class="x">${unit}</span></div>
+    ${last ? `<div class="last">Last (${shortDate(last.date)}): ${last.sets.filter((x) => x.done).map((x) => (ex.type === 'hold' ? `${x.secs}s` : x.r)).join(', ')}</div>` : ''}
+  </div>`;
 }
 
 function exCard(ex, draft, dk) {
@@ -406,6 +472,9 @@ function rerenderEx(ex, draft) {
 
 function finishSession() {
   const { id, dk, past } = view.session; const key = `${id}|${dk}`; const draft = S().active[key];
+  if (SESSIONS[id].blocks) {
+    Object.values(draft.sets).forEach((rows) => rows.forEach((r) => { r.done = (r.r !== '' && r.r != null) || (r.secs !== '' && r.secs != null && r.secs !== null); }));
+  }
   const any = Object.values(draft.sets).flat().some((s) => s.done);
   if (!any && !confirm('No sets ticked. Finish anyway?')) return;
   S().sessions = S().sessions.filter((s) => !(s.session === id && s.date === dk));
@@ -488,7 +557,11 @@ function viewTimer() {
   const C = timerConf();
   const total = intervalPhases(C).reduce((a, p) => a + p.secs, 0);
   const row = (k, l) => `<div class="stepper"><span>${l}</span><div><button data-act="adj" data-k="${k}" data-v="-1">−</button><b>${k === 'rounds' || k === 'sets' ? C[k] : fmt(C[k])}</b><button data-act="adj" data-k="${k}" data-v="1">+</button></div></div>`;
+  const snd = S().settings.sound || 'beep';
   return `<header class="top"><div><div class="eyebrow">Intervals</div><h1>Timer</h1></div></header>
+    <section class="card"><h2>Timer sound</h2>
+      <div class="seg two-seg"><a class="${snd === 'beep' ? 'on' : ''}" data-act="sound" data-v="beep">Beeps and vibration</a><a class="${snd === 'vibrate' ? 'on' : ''}" data-act="sound" data-v="vibrate">Vibrate only</a></div>
+      <p class="hint">${snd === 'vibrate' ? 'Vibrate only leaves your podcast or music alone. Three taps = countdown, long buzz = go, double buzz = switch sides.' : 'Beeps can pause a podcast playing in another app. Choose Vibrate only to stop that.'} Applies to every timer in the app.</p></section>
     <section><h2>Presets</h2><div class="presets">${TIMER_PRESETS.map((p, i) => `<button class="preset ${C.sel === i ? 'sel' : ''}" data-act="preset" data-i="${i}"><b>${esc(p.n)}</b><span>${esc(p.d)}</span></button>`).join('')}</div></section>
     <section><h2>Custom</h2><div class="card">${row('prep', 'Prep')}${row('work', 'Work')}${row('rest', 'Rest')}${row('rounds', 'Rounds')}${row('sets', 'Sets')}${row('setrest', 'Rest between sets')}</div>
     <p class="hint center">Total ${fmt(total)}</p>
@@ -864,6 +937,12 @@ $app.addEventListener('click', (e) => {
     case 'fday': { foodDate = ymd(addDays(parse(foodDate), +el.dataset.v)); return render(); }
     case 'fadd': { const f = FOOD_PRESETS[+el.dataset.g].items[+el.dataset.i]; foodFor(foodDate).push({ name: f.name, kcal: f.kcal, p: f.p }); save(); toast(`Added ${f.name}`); return render(); }
     case 'fscan': return scanSheet();
+    case 'block': {
+      const { id, dk } = view.session; const sess = SESSIONS[id]; const b = sess.blocks[+el.dataset.b];
+      const draft = S().active[`${id}|${dk}`];
+      return runSequence(blockPhases(sess, b), { title: `${sess.name} · ${b.name}`, onDone: () => { draft.parts = { ...(draft.parts || {}), [b.id]: true }; save(); }, onEnd: () => render() });
+    }
+    case 'sound': { st.settings.sound = el.dataset.v; setSoundMode(st.settings.sound); save(); return render(); }
     case 'askclaude': {
       const base = `${location.origin}${location.pathname}`;
       const prompt = `Estimate the calories and protein for the food below. Use the brand's or restaurant's published numbers if you know them, otherwise a realistic estimate. Keep the reply short. End with a link in exactly this format so I can log it in my food tracker (URL-encode the name, whole numbers only):\n${base}#/add?n=NAME&k=KCAL&p=PROTEIN\n\nWhat I ate: `;
@@ -936,6 +1015,10 @@ $app.addEventListener('change', (e) => {
   if (act === 'menu') { const m = el.dataset.mon; st.menus[m] = { ...menuFor(m), [el.dataset.slot]: el.value }; save(); render(); }
   if (act === 'fpsel') { setFlex(el.dataset.k, +el.value); render(); }
   if (act === 'level') { st.levels[el.dataset.ex] = +el.value; save(); }
+  if (act === 'wall') {
+    const { id, dk } = view.session; const rows = st.active[`${id}|${dk}`].sets[el.dataset.ex];
+    rows.forEach((r) => { r.w = el.value === '' ? '' : +el.value; }); save();
+  }
   if (['w', 'r', 'secs'].includes(act)) {
     const { id, dk } = view.session; const row = st.active[`${id}|${dk}`].sets[el.dataset.ex][+el.dataset.i];
     row[act] = el.value === '' ? '' : +el.value;
@@ -956,6 +1039,7 @@ $app.addEventListener('change', (e) => {
 });
 
 // ---------- boot ----------
+setSoundMode(S().settings.sound);
 render();
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('./sw.js').catch(() => {});

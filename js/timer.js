@@ -18,7 +18,32 @@ export function beep(freq = 880, dur = 0.12, vol = 0.3) {
   } catch (e) { /* audio unavailable */ }
 }
 export const buzz = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
-export function unlockAudio() { beep(440, 0.01, 0.001); }
+
+// Sound mode: 'beep' (beeps + vibration) or 'vibrate' (vibration only).
+// Every beep makes Android hand the speaker to Chrome, which can pause a
+// podcast in another app — vibrate-only never touches other apps' audio.
+let soundMode = 'beep';
+export function setSoundMode(m) { soundMode = m === 'vibrate' ? 'vibrate' : 'beep'; }
+export function unlockAudio() { if (soundMode === 'beep') beep(440, 0.01, 0.001); }
+const VIB = {
+  tick: 70,                                // 3-2-1 countdown: short taps
+  go: 450,                                 // work or hold starts: one long buzz
+  switch: [140, 90, 140],                  // switch sides: double buzz
+  rest: [90, 60, 90, 60, 90],              // rest starts: three quick pulses
+  restEnd: [300, 100, 300],                // rest over (lifting): two strong buzzes
+  done: [200, 100, 200, 100, 600],         // finished
+};
+export function cue(kind) {
+  if (soundMode === 'beep') {
+    if (kind === 'tick') beep(880, 0.08, 0.25);
+    else if (kind === 'go') beep(1046, 0.25, 0.4);
+    else if (kind === 'switch') { beep(660, 0.15, 0.35); setTimeout(() => beep(660, 0.15, 0.35), 200); }
+    else if (kind === 'rest') beep(440, 0.2, 0.3);
+    else if (kind === 'restEnd') beep(1046, 0.3, 0.4);
+    else if (kind === 'done') { beep(523, 0.15); setTimeout(() => beep(659, 0.15), 160); setTimeout(() => beep(784, 0.35), 320); }
+  }
+  buzz(VIB[kind]);
+}
 
 // ---------- wake lock ----------
 let lock = null;
@@ -123,7 +148,7 @@ function tick() {
   const whole = Math.ceil(seq.left);
   if (whole !== seq.lastWhole) {
     seq.lastWhole = whole;
-    if (whole <= 3 && whole > 0) { beep(880, 0.08, 0.25); buzz(40); }
+    if (whole <= 3 && whole > 0) cue('tick');
   }
   draw();
 }
@@ -131,8 +156,7 @@ function tick() {
 function next(manual) {
   seq.i++;
   if (seq.i >= seq.phases.length) {
-    beep(523, 0.15); setTimeout(() => beep(659, 0.15), 160); setTimeout(() => beep(784, 0.35), 320);
-    buzz([120, 80, 120, 80, 250]);
+    cue('done');
     const done = seq.onDone;
     finishScreen();
     done && done();
@@ -140,9 +164,9 @@ function next(manual) {
   }
   const p = seq.phases[seq.i];
   if (!manual) {
-    if (p.kind === 'work' || p.kind === 'hold') { beep(1046, 0.25, 0.4); buzz(200); }
-    else if (p.kind === 'switch') { beep(660, 0.15, 0.35); setTimeout(() => beep(660, 0.15, 0.35), 200); buzz([100, 60, 100]); }
-    else { beep(440, 0.2, 0.3); buzz(120); }
+    if (p.kind === 'work' || p.kind === 'hold' || p.kind === 'stretch') cue('go');
+    else if (p.kind === 'switch') cue('switch');
+    else cue('rest');
   }
   enter();
 }
@@ -239,8 +263,8 @@ function drawRest() {
   if (!rest) return;
   const left = rest.paused ? rest.pausedLeft : (rest.end - performance.now()) / 1000;
   const whole = Math.ceil(left);
-  if (!rest.paused && whole !== rest.lastWhole) { rest.lastWhole = whole; if (whole <= 3 && whole > 0) { beep(880, 0.08, 0.25); buzz(40); } }
-  if (left <= 0) { beep(1046, 0.3, 0.4); buzz([200, 80, 200]); stopRest(); return; }
+  if (!rest.paused && whole !== rest.lastWhole) { rest.lastWhole = whole; if (whole <= 3 && whole > 0) cue('tick'); }
+  if (left <= 0) { cue('restEnd'); stopRest(); return; }
   rest.el.querySelector('.rb-time').textContent = rest.paused ? `${fmt(left)} · paused` : fmt(left);
   rest.el.querySelector('.rb-fill').style.width = `${(left / rest.total) * 100}%`;
   mediaUpdate('rest', { title: `${fmt(left)} · Rest`, artist: rest.label, album: 'Fitness Plan', duration: rest.total, position: rest.total - left, playing: !rest.paused });

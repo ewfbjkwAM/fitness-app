@@ -54,20 +54,44 @@ export const SESSIONS = {
   upper: {
     name: 'Upper body',
     sub: 'Calisthenics',
-    minutes: 60,
+    minutes: 40,
     warmup: 'warmupUpper',
     cooldown: 'shouldersBridge',
-    note: 'Climbed yesterday? If grip or elbows are cooked, swap archer pulls for an extra handstand and dip block.',
+    note: 'Two continuous timers, then one quick log. Climbed yesterday? If grip or elbows are cooked, do pike push-ups and dips in pair A as well and skip archer pulls.',
+    // Timed format: each block runs as one continuous timer.
+    blocks: [
+      { id: 'skill', name: 'Skill block', sub: 'Handstand and flag, alternating', groups: [
+        { label: 'Skill', rounds: 5, items: [
+          { ex: 'handstand', rest: 40 },
+          { ex: 'flag', rest: 50 },
+        ] },
+      ] },
+      { id: 'strength', name: 'Strength and core', sub: 'Pull and push pairs, then core', groups: [
+        { label: 'Pair A', rounds: 3, after: 60, items: [
+          { ex: 'archer', work: 40, rest: 15, cue: 'Aim for 4–6 each side' },
+          { ex: 'pike', work: 40, rest: 60, cue: 'Aim for 8–12' },
+        ] },
+        { label: 'Pair B', rounds: 3, after: 60, items: [
+          { ex: 'skinCat', work: 40, rest: 15, cue: '3–5 slow reps' },
+          { ex: 'dips', work: 40, rest: 60, cue: 'Aim for 8–12' },
+        ] },
+        { label: 'Core', rounds: 2, items: [
+          { ex: 'facePop', work: 45, rest: 10, cue: '15 face pulls, then 8 pop-ups' },
+          { ex: 'kneeRaise', work: 40, rest: 10, cue: 'Aim for 10' },
+          { ex: 'lsit', rest: 45 },
+        ] },
+      ] },
+    ],
     exercises: [
-      { id: 'handstand', name: 'Handstand', type: 'hold', sets: 7, secs: 30, rest: 75, levels: ['Chest to wall', 'Back to wall', 'Kick-up attempts', 'Freestanding'], notes: '6–8 holds of 20–40 s.' },
-      { id: 'flag', name: 'Human flag', type: 'hold', sets: 4, secs: 8, rest: 90, levels: ['Vertical flag hold', 'Tuck flag', 'One-leg tuck', 'Straddle'], notes: '4–5 holds of 5–10 s. Alternate weeks with skin the cat if shoulders are tired.' },
-      { id: 'archer', name: 'Archer pulls', type: 'reps', sets: 3, reps: [4, 6], each: true, rest: 90, levels: ['Archer rows', 'Assisted archer pulls', 'Full archer pulls'] },
-      { id: 'skinCat', name: 'Skin the cat', type: 'reps', sets: 3, reps: [3, 5], rest: 90, levels: ['Feet on floor', 'Tucked', 'Full'], notes: 'Slow reps.' },
-      { id: 'pike', name: 'Pike push-ups', type: 'reps', sets: 3, reps: [8, 12], rest: 90, levels: ['Floor', 'Feet elevated', 'Wall HSPU negatives'] },
-      { id: 'dips', name: 'Dips', type: 'lift', sets: 3, reps: [8, 12], start: 0, inc: 2.5, rest: 90, notes: '0 kg = bodyweight. Add weight after 3 × 12.' },
-      { id: 'facePop', name: 'Face pulls × 15 + pop-up drills × 8', type: 'reps', sets: 3, reps: [1, 1], rest: 60, unit: 'round', notes: 'Posture and surf strength. One round per set.' },
-      { id: 'kneeRaise', name: 'Hanging knee raises', type: 'reps', sets: 3, reps: [10, 10], rest: 60, levels: ['Knee raises', 'Leg raises'] },
-      { id: 'lsit', name: 'L-sit hold', type: 'hold', sets: 3, secs: 15, rest: 60, levels: ['Tuck L-sit', 'One leg out', 'Full L-sit'], notes: 'Max hold. Set the time to your current max.' },
+      { id: 'handstand', name: 'Handstand', type: 'hold', sets: 5, secs: 30, rest: 40, levels: ['Chest to wall', 'Back to wall', 'Kick-up attempts', 'Freestanding'] },
+      { id: 'flag', name: 'Human flag', type: 'hold', sets: 5, secs: 8, rest: 50, levels: ['Vertical flag hold', 'Tuck flag', 'One-leg tuck', 'Straddle'] },
+      { id: 'archer', name: 'Archer pulls', type: 'reps', sets: 3, reps: [4, 6], each: true, rest: 15, levels: ['Archer rows', 'Assisted archer pulls', 'Full archer pulls'] },
+      { id: 'pike', name: 'Pike push-ups', type: 'reps', sets: 3, reps: [8, 12], rest: 60, levels: ['Floor', 'Feet elevated', 'Wall HSPU negatives'] },
+      { id: 'skinCat', name: 'Skin the cat', type: 'reps', sets: 3, reps: [3, 5], rest: 15, levels: ['Feet on floor', 'Tucked', 'Full'] },
+      { id: 'dips', name: 'Dips', type: 'lift', sets: 3, reps: [8, 12], start: 0, inc: 2.5, rest: 60, notes: '0 kg = bodyweight. Add weight after 3 × 12.' },
+      { id: 'facePop', name: 'Face pulls + pop-ups', type: 'reps', sets: 2, reps: [1, 1], rest: 10, unit: 'round' },
+      { id: 'kneeRaise', name: 'Hanging knee raises', type: 'reps', sets: 2, reps: [10, 10], rest: 10, levels: ['Knee raises', 'Leg raises'] },
+      { id: 'lsit', name: 'L-sit hold', type: 'hold', sets: 2, secs: 15, rest: 45, levels: ['Tuck L-sit', 'One leg out', 'Full L-sit'], notes: 'Set the time to your current max.' },
     ],
   },
 };

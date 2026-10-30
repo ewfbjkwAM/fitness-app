@@ -171,28 +171,46 @@ function next(manual) {
   enter();
 }
 
+const secsTxt = (x) => (x < 60 ? `${Math.round(x)} s` : fmt(x));
+const BREAK_WORD = { rest: 'Rest', prep: 'Get ready', switch: 'Switch sides' };
+const KIND_WORD = { prep: 'Get ready', work: 'Work', rest: 'Rest', switch: 'Switch sides', hold: 'Hold', stretch: 'Stretch' };
+
 function draw() {
   const s = seq; const p = s.phases[s.i]; const el = s.el;
+  const kind = p.kind || 'work';
+  const isBreak = kind in BREAK_WORD;
+  // The next thing you'll actually do (skips over rests and side switches).
+  let upNext = null;
+  for (let j = s.i + 1; j < s.phases.length; j++) { if (!(s.phases[j].kind in BREAK_WORD)) { upNext = s.phases[j]; break; } }
+  const title = isBreak ? (p.title || BREAK_WORD[kind]) : (p.label || KIND_WORD[kind]);
   el.querySelector('.seq-count').textContent = `${s.i + 1} / ${s.phases.length}`;
-  el.querySelector('.seq-phase').textContent = { prep: 'Get ready', work: 'Work', rest: 'Rest', switch: 'Switch sides', hold: 'Hold', stretch: 'Stretch' }[p.kind || 'work'] || '';
-  el.querySelector('.seq-label').textContent = p.label || '';
+  el.querySelector('.seq-phase').textContent = isBreak ? '' : KIND_WORD[kind];
+  el.querySelector('.seq-label').textContent = title;
   el.querySelector('.seq-time').textContent = fmt(s.left);
-  el.querySelector('.seq-sub').textContent = p.sub || '';
-  const n = s.phases[s.i + 1];
-  el.querySelector('.seq-next').textContent = n ? `Next: ${n.label || n.kind} · ${fmt(n.secs)}` : 'Last one';
+  if (isBreak) {
+    el.querySelector('.seq-sub').innerHTML = upNext ? `<span class="upnext">Up next</span>${esc(upNext.label)}` : 'Last one coming up';
+    el.querySelector('.seq-next').textContent = upNext?.sub || '';
+  } else {
+    el.querySelector('.seq-sub').textContent = p.sub || '';
+    const n = s.phases[s.i + 1];
+    el.querySelector('.seq-next').textContent = !n ? 'Last one' : n.kind in BREAK_WORD
+      ? (n.kind === 'switch' ? 'Then switch sides' : `Then ${(n.title || BREAK_WORD[n.kind]).toLowerCase()} · ${secsTxt(n.secs)}`)
+      : `Then ${n.label} · ${secsTxt(n.secs)}`;
+  }
   el.querySelector('.seq-fill').style.width = `${Math.max(0, (s.left / p.secs) * 100)}%`;
   el.querySelector('[data-a="pause"]').textContent = s.paused ? 'Resume' : 'Pause';
   el.classList.toggle('paused', s.paused);
-  const kindName = { prep: 'Get ready', work: 'Work', rest: 'Rest', switch: 'Switch sides', hold: 'Hold', stretch: 'Stretch' }[p.kind || 'work'];
   mediaUpdate('seq', {
-    title: `${fmt(s.left)} · ${p.label || kindName}`,
-    artist: [kindName, p.sub].filter(Boolean).join(' · '),
+    title: `${fmt(s.left)} · ${title}`,
+    artist: isBreak ? (upNext ? `Up next: ${upNext.label}` : '') : [KIND_WORD[kind], p.sub].filter(Boolean).join(' · '),
     album: s.title || 'Fitness Plan',
     duration: p.secs,
     position: p.secs - s.left,
     playing: !s.paused,
   });
 }
+
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function finishScreen() {
   clearInterval(seq.tick);
@@ -292,7 +310,7 @@ export function routinePhases(routine) {
       out.push({ label: s.name, sub: s.cue || '', secs: s.secs, kind: 'stretch' });
     }
     const n = routine.steps[i + 1];
-    if (n && tr) out.push({ label: n.name, sub: 'Next position', secs: tr, kind: 'rest' });
+    if (n && tr) out.push({ label: n.name, title: 'Change position', sub: 'Next position', secs: tr, kind: 'rest' });
   });
   return out;
 }
@@ -320,7 +338,7 @@ export function intervalPhases(C) {
       out.push({ label: 'Work', sub, secs: C.work, kind: 'work' });
       if (C.rest > 0 && !(r === C.rounds && st === C.sets)) out.push({ label: 'Rest', sub, secs: C.rest, kind: 'rest' });
     }
-    if (st < C.sets && C.setrest > 0) out.push({ label: 'Set break', secs: C.setrest, kind: 'rest' });
+    if (st < C.sets && C.setrest > 0) out.push({ label: 'Set break', title: 'Set break', secs: C.setrest, kind: 'rest' });
   }
   return out;
 }

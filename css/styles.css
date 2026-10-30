@@ -395,3 +395,6 @@ h1 { font-family: var(--serif); font-weight: 500; font-size: 30px; letter-spacin
 .num.xs { width: 50px; padding: 9px 4px; }
 .card .logboxes input.num { width: 54px; margin-top: 0; padding: 9px 4px; }
 .card .logboxes input.num.sm { width: 64px; }
+.seq-sub .upnext { display: block; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; opacity: .75; margin-bottom: 4px; }
+.seq[data-kind="rest"] .seq-sub, .seq[data-kind="prep"] .seq-sub, .seq[data-kind="switch"] .seq-sub { font-size: 20px; font-weight: 600; opacity: 1; }
+.seq[data-kind="rest"] .seq-label, .seq[data-kind="prep"] .seq-label, .seq[data-kind="switch"] .seq-label { font-size: 30px; }

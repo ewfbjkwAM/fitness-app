@@ -286,8 +286,39 @@ function foodTop(tk, auditDay) {
 
 // ---------- SESSION ----------
 function lastFor(exId, beforeDate) {
-  const list = S().sessions.filter((s) => s.sets[exId] && s.date < beforeDate).sort((a, b) => (a.date < b.date ? 1 : -1));
+  // Most recent earlier session where this exercise was actually done.
+  const list = S().sessions.filter((s) => s.sets[exId] && s.date < beforeDate && s.sets[exId].some((x) => x.done)).sort((a, b) => (a.date < b.date ? 1 : -1));
   return list[0] ? { date: list[0].date, sets: list[0].sets[exId] } : null;
+}
+
+// Hold length for the timer: your last logged time, never less than 5 s.
+function holdFor(ex) { const v = +S().holdSecs[ex.id]; return v >= 5 ? v : ex.secs; }
+
+// A session left unfinished on an earlier day (no "Finish" tapped) is saved
+// automatically if any set was ticked or logged, so its weights count next time.
+function rescueDrafts() {
+  const st = S(); const todayK = ymd(today()); let saved = 0;
+  Object.keys(st.active).forEach((key) => {
+    const [id, dk] = key.split('|');
+    if (!dk || dk >= todayK || !SESSIONS[id]) return;
+    const draft = st.active[key];
+    // Timed sessions are pre-filled from last time, so only count them if a timer block was actually run.
+    if (SESSIONS[id].blocks) {
+      const ran = Object.values(draft.parts || {}).some(Boolean);
+      Object.values(draft.sets).forEach((rows) => rows.forEach((r) => { r.done = ran && (r.done || (r.r !== '' && r.r != null) || (+r.secs > 0)); }));
+    }
+    const any = Object.values(draft.sets).flat().some((r) => r.done);
+    if (any && !st.sessions.some((x) => x.session === id && x.date === dk)) {
+      st.sessions.push({ session: id, date: dk, sets: draft.sets, levels: { ...st.levels } });
+      const date = parse(dk); const mon = ymd(mondayOf(date)); const W = buildWeek(mon); const d = dayIdx(date);
+      if (W.days[d].some((x) => x.key === id)) setDone(mon, d, id, true);
+      saved++;
+    }
+    delete st.active[key];
+  });
+  if (Object.keys(st.holdSecs || {}).length) Object.keys(st.holdSecs).forEach((k) => { if (!(+st.holdSecs[k] >= 5)) delete st.holdSecs[k]; });
+  save();
+  return saved;
 }
 
 function initDraft(id, dk) {
@@ -310,7 +341,7 @@ function initDraft(id, dk) {
       const lr = last?.sets[i]?.r;
       // Reps start at the bottom of the range (or last time's reps) so the
       // weight only goes up once you've actually typed in the top of the range.
-      rows.push({ w, r: ex.type === 'hold' ? '' : (ex.type === 'lift' ? (lr != null && lr !== '' && !draft.sugg[ex.id] ? lr : ex.reps[0]) : (lr ?? ex.reps[1])), secs: ex.type === 'hold' ? (st.holdSecs[ex.id] ?? ex.secs) : null, done: false });
+      rows.push({ w, r: ex.type === 'hold' ? '' : (ex.type === 'lift' ? (lr != null && lr !== '' && !draft.sugg[ex.id] ? lr : ex.reps[0]) : (lr ?? ex.reps[1])), secs: ex.type === 'hold' ? holdFor(ex) : null, done: false });
     }
     draft.sets[ex.id] = rows;
   });
@@ -353,7 +384,7 @@ function blockPhases(sess, block) {
     for (let r = 1; r <= g.rounds; r++) {
       g.items.forEach((it, ii) => {
         const ex = exById[it.ex]; const hold = ex.type === 'hold';
-        const secs = hold ? (S().holdSecs[ex.id] ?? ex.secs) : it.work;
+        const secs = hold ? holdFor(ex) : it.work;
         const lvl = ex.levels ? ex.levels[S().levels[ex.id] ?? 0] : '';
         out.push({ label: ex.name, sub: [`${g.label} · round ${r} of ${g.rounds}`, hold ? `Hold ${secs} s` : it.cue, lvl].filter(Boolean).join(' · '), secs, kind: hold ? 'hold' : 'work' });
         const lastItem = ii === g.items.length - 1;
@@ -1022,7 +1053,7 @@ $app.addEventListener('change', (e) => {
   if (['w', 'r', 'secs'].includes(act)) {
     const { id, dk } = view.session; const row = st.active[`${id}|${dk}`].sets[el.dataset.ex][+el.dataset.i];
     row[act] = el.value === '' ? '' : +el.value;
-    if (act === 'secs') st.holdSecs[el.dataset.ex] = +el.value;
+    if (act === 'secs' && +el.value > 0) st.holdSecs[el.dataset.ex] = +el.value; // a blank or 0 never shortens next time's timer
     if (act === 'w') {
       // carry a changed weight down to the following unticked sets
       const rows = st.active[`${id}|${dk}`].sets[el.dataset.ex];
@@ -1040,7 +1071,9 @@ $app.addEventListener('change', (e) => {
 
 // ---------- boot ----------
 setSoundMode(S().settings.sound);
+const rescued = rescueDrafts();
 render();
+if (rescued) toast(`Saved ${rescued} unfinished session${rescued > 1 ? 's' : ''} from earlier days`);
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }

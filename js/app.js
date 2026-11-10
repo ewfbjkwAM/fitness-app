@@ -1,7 +1,7 @@
 import {
   SESSIONS, ROUTINES, CIRCUITS, ACTIVITIES, DAY_NAMES, DAY_LONG, DROP_ORDER, SKIN_AM, SKIN_PM,
   DAILY_TICKS, WEEKLY_TICKS, FOOD_PRESETS, SOCIAL_RULES, MEAL_OPTIONS, TIMER_PRESETS, TARGETS,
-  MEALS, ROTATION, WEEKEND_BREAKFAST, CORE_LIST, EXTRAS, FLEX_PROGRESS,
+  MEALS, ROTATION, WEEKEND_BREAKFAST, CORE_LIST, EXTRAS, FLEX_PROGRESS, FLEX_GROUPS,
 } from './data.js';
 import { searchFoods, lookupBarcode, nutritionFor, canScan, scanBarcode } from './foods.js';
 import {
@@ -548,14 +548,71 @@ function progressCard(ids) {
     const ctl = f.type === 'kg'
       ? `<div class="kgstep"><button data-act="fp" data-k="${k}" data-v="-2.5" aria-label="Less">−</button><b>${v ? `${v} kg` : 'Bodyweight'}</b><button data-act="fp" data-k="${k}" data-v="2.5" aria-label="More">+</button></div>`
       : `<select data-act="fpsel" data-k="${k}">${f.options.map((o, i) => `<option value="${i}" ${i === v ? 'selected' : ''}>${esc(o[0].toUpperCase() + o.slice(1))}</option>`).join('')}</select>`;
-    return `<div class="prog-row"><div><span>${esc(f.label)}</span><small>${esc(f.hint)}</small></div>${ctl}</div>`;
-  }).join('')}</section>`;
+    return `<div class="prog-row"><div><span>${esc(f.label)}</span></div>${ctl}</div><p class="prog-rule"><b>Move up when:</b> ${esc(f.rule)} Two sessions in a row.</p>`;
+  }).join('')}<p class="hint">At the end of the routine you'll get a quick yes or no for each. Two yeses in a row and the app suggests the next step.</p></section>`;
+}
+
+// ---------- end-of-routine level check ----------
+function checkKeys(track) {
+  const keys = [];
+  track.forEach((k) => { const key = FLEX_PROGRESS[k].group || k; if (!keys.includes(key)) keys.push(key); });
+  return keys;
+}
+const checkQuestion = (key) => (FLEX_GROUPS[key] ? FLEX_GROUPS[key].check : FLEX_PROGRESS[key].check);
+const isMax = (k) => FLEX_PROGRESS[k].type !== 'kg' && flexVal(k) >= FLEX_PROGRESS[k].options.length - 1;
+
+// The level a "yes, yes" on this check would move up, or null when there's nowhere to go.
+function nextStep(key) {
+  const members = FLEX_GROUPS[key] ? FLEX_GROUPS[key].members : [key];
+  const k = members.find((m) => !isMax(m)); if (!k) return null;
+  const f = FLEX_PROGRESS[k]; const v = flexVal(k);
+  if (f.type === 'kg') { const nv = Math.round((v + (f.step || 2.5)) * 10) / 10; return { k, v: nv, text: `${f.label}: ${nv} kg` }; }
+  return { k, v: v + 1, text: `${f.label}: ${f.options[v + 1]}` };
+}
+
+function recordCheck(key, yes) {
+  const st = S(); st.flexChecks = st.flexChecks || {};
+  const list = (st.flexChecks[key] || []).filter((x) => x.date !== ymd(today()));
+  list.push({ date: ymd(today()), yes }); st.flexChecks[key] = list.slice(-6); save();
+}
+const readyToMove = (key) => { const l = S().flexChecks?.[key] || []; return l.length >= 2 && l[l.length - 1].yes && l[l.length - 2].yes; };
+
+function levelCheckSheet(routineId) {
+  const r = ROUTINES[routineId]; if (!r?.track) return;
+  const keys = checkKeys(r.track);
+  const answers = {};
+  const draw = () => {
+    const allAnswered = keys.every((k) => answers[k] !== undefined);
+    if (!allAnswered) {
+      return `<h3>Quick check</h3><p class="hint">Be honest — it only moves you up after two yeses in a row.</p>
+        ${keys.map((k) => `<div class="qrow"><span>${esc(checkQuestion(k))}</span><div class="yn"><button class="${answers[k] === true ? 'on' : ''}" data-yn="${k}" data-v="1">Yes</button><button class="${answers[k] === false ? 'on no' : ''}" data-yn="${k}" data-v="0">Not yet</button></div></div>`).join('')}
+        <button class="btn ghost block" data-s="skip">Skip</button>`;
+    }
+    const sugg = keys.filter(readyToMove).map((k) => ({ key: k, step: nextStep(k) })).filter((x) => x.step);
+    return `<h3>${sugg.length ? 'Ready to move up' : 'Saved'}</h3>
+      ${sugg.length ? sugg.map((x) => `<div class="qrow"><span>Two sessions in a row — try <b>${esc(x.step.text)}</b> next time?</span><div class="yn"><button class="on" data-up="${x.key}">Move up</button></div></div>`).join('') : '<p class="hint">Keep going at these levels. Two yeses in a row and you\'ll be offered the next step.</p>'}
+      <button class="btn primary block" data-s="skip">Done</button>`;
+  };
+  const wrap = sheet(draw(), (e) => {
+    const yn = e.target.closest('[data-yn]');
+    if (yn) {
+      answers[yn.dataset.yn] = yn.dataset.v === '1';
+      if (keys.every((k) => answers[k] !== undefined)) keys.forEach((k) => recordCheck(k, answers[k]));
+      wrap.querySelector('.sheet').innerHTML = `<div class="sheet-grip"></div>${draw()}`; return;
+    }
+    const up = e.target.closest('[data-up]');
+    if (up) { const st = nextStep(up.dataset.up); if (st) setFlex(st.k, st.v); toast(`Next time: ${st.text}`); up.closest('.qrow').remove(); render(); return; }
+    if (e.target.closest('[data-s="skip"]')) { closeSheet(); render(); }
+  });
 }
 
 function setFlex(k, v) {
   const st = S(); st.flexProg = st.flexProg || {}; st.flexLog = st.flexLog || [];
   if (st.flexProg[k] === v) return;
-  st.flexProg[k] = v; st.flexLog.push({ date: ymd(today()), k, v }); save();
+  st.flexProg[k] = v; st.flexLog.push({ date: ymd(today()), k, v });
+  // A new level starts a fresh streak for its check.
+  st.flexChecks = st.flexChecks || {}; delete st.flexChecks[FLEX_PROGRESS[k].group || k];
+  save();
 }
 
 function viewCircuit(id) {
@@ -805,11 +862,12 @@ function bodyTab() {
     ${ms.length ? `<table class="tbl"><tr><th>Date</th><th>Waist</th><th>Hips</th><th>W:H</th><th>Chest</th><th>Thigh</th></tr>${ms.map((m) => `<tr><td>${shortDate(m.date)}</td><td>${m.waist || ''}</td><td>${m.hips || ''}</td><td>${m.waist && m.hips ? (m.waist / m.hips).toFixed(2) : ''}</td><td>${m.chest || ''}</td><td>${m.thigh || ''}</td></tr>`).join('')}</table>` : ''}
   </section>
   <section class="card"><h2>Flexibility test</h2>
-    <p class="hint">First Saturday of each month. Pancake: chest-to-floor distance. Bridge: your current level (plus a side photo if you like).</p>
-    <div class="two"><label>Pancake (cm)<input id="f-pan" type="number" inputmode="decimal" placeholder="cm"></label>
+    <p class="hint">First Saturday of each month. Pancake: chest-to-floor distance. Frog: hip bones to floor, hips in line with knees. Bridge: your current level (plus a side photo if you like).</p>
+    <div class="two"><label>Pancake (cm)<input id="f-pan" type="number" inputmode="decimal" placeholder="cm"></label><label>Frog (cm)<input id="f-frog" type="number" inputmode="decimal" placeholder="cm"></label></div>
+    <div class="one">
     <label>Bridge level<select id="f-bridge">${bridgeLv.map((l, i) => `<option value="${i}">${i + 1}. ${l}</option>`).join('')}</select></label></div>
     <button class="btn primary block" data-act="flexadd">Save test</button>
-    ${fl.length ? `<table class="tbl"><tr><th>Date</th><th>Pancake</th><th>Bridge</th></tr>${fl.map((f) => `<tr><td>${shortDate(f.date)}</td><td>${f.pancake ?? ''} cm</td><td>${bridgeLv[f.bridge] || ''}</td></tr>`).join('')}</table>` : ''}
+    ${fl.length ? `<table class="tbl"><tr><th>Date</th><th>Pancake</th><th>Frog</th><th>Bridge</th></tr>${fl.map((f) => `<tr><td>${shortDate(f.date)}</td><td>${f.pancake != null ? `${f.pancake} cm` : ''}</td><td>${f.frog != null ? `${f.frog} cm` : ''}</td><td>${bridgeLv[f.bridge] || ''}</td></tr>`).join('')}</table>` : ''}
   </section>`;
 }
 
@@ -954,10 +1012,12 @@ $app.addEventListener('click', (e) => {
     case 'discard': if (confirm('Discard this session?')) { delete st.active[`${view.session.id}|${view.session.dk}`]; save(); stopRest(); location.hash = '#/today'; } return;
     case 'play': {
       const id = el.dataset.id;
+      let finished = false;
       return runSequence(routinePhases(fillCues(ROUTINES[id])), { title: ROUTINES[id].name, onDone: () => {
+        finished = true;
         markTodayDone((k, a) => a && a.routine === id);
         if (id === 'flexFull') { week(ymd(mondayOf(today()))).fullFlexDone = true; save(); }
-      } });
+      }, onEnd: () => { if (finished && ROUTINES[id].track) levelCheckSheet(id); } });
     }
     case 'fp': { const k = el.dataset.k; setFlex(k, Math.max(0, Math.round((flexVal(k) + +el.dataset.v) * 10) / 10)); return render(); }
     case 'xdel': { removeExtra(el.dataset.mon, +el.dataset.d, +el.dataset.i); return render(); }
@@ -1010,8 +1070,8 @@ $app.addEventListener('click', (e) => {
       st.measures = st.measures.filter((x) => x.date !== m.date); st.measures.push(m); save(); toast('Measurements saved'); return render();
     }
     case 'flexadd': {
-      const pan = parseFloat(document.getElementById('f-pan').value); const br = +document.getElementById('f-bridge').value;
-      st.flex = st.flex.filter((x) => x.date !== ymd(today())); st.flex.push({ date: ymd(today()), pancake: isNaN(pan) ? null : pan, bridge: br }); save(); toast('Test saved'); return render();
+      const pan = parseFloat(document.getElementById('f-pan').value); const frog = parseFloat(document.getElementById('f-frog').value); const br = +document.getElementById('f-bridge').value;
+      st.flex = st.flex.filter((x) => x.date !== ymd(today())); st.flex.push({ date: ymd(today()), pancake: isNaN(pan) ? null : pan, frog: isNaN(frog) ? null : frog, bridge: br }); save(); toast('Test saved'); return render();
     }
     case 'shopreset': { st.shop[el.dataset.mon] = {}; save(); return render(); }
     case 'setstart': {

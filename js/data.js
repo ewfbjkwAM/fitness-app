@@ -21,7 +21,7 @@ export const SESSIONS = {
   gluteA: {
     name: 'Glute A',
     sub: 'Heavy',
-    minutes: 60,
+    minutes: 55,
     warmup: 'warmupGlute',
     cooldown: 'hipsPancake',
     exercises: [
@@ -30,7 +30,6 @@ export const SESSIONS = {
       { id: 'slSitStand', name: 'Single-leg sit to stand', type: 'lift', sets: 3, reps: [10, 10], each: true, start: 10, inc: 2.5, rest: 90, notes: 'Slow, thighs slightly apart, no knee wobble. Progress by lowering the seat. Stop short of any ankle pinch.' },
       { id: 'legPress', name: 'Leg press, feet high', type: 'lift', sets: 3, reps: [10, 15], start: null, inc: 10, rest: 90, notes: 'Feet slightly wider than hips, not a wide stance.' },
       { id: 'cableAbd', name: 'Cable hip abduction', type: 'lift', sets: 3, reps: [12, 15], each: true, start: null, inc: 2.5, rest: 60, notes: 'Slow, lean slightly forward.' },
-      { id: 'copenhagen', name: 'Copenhagen reps', type: 'reps', sets: 3, reps: [5, 5], each: true, rest: 45, notes: 'Aim for 15 each side in total. If the left side is sore at the bottom, only hover; don\'t push through the floor.' },
       { id: 'pallof', name: 'Pallof press', type: 'lift', sets: 3, reps: [10, 10], each: true, start: null, inc: 1, rest: 45, notes: 'Core for a slimmer waist without bulk.' },
     ],
   },
@@ -83,6 +82,7 @@ export const SESSIONS = {
       ] },
     ],
     exercises: [
+      { id: 'copenhagen', name: 'Copenhagen reps (warm-up)', type: 'reps', sets: 3, reps: [5, 5], each: true, rest: 20, notes: 'Physio target: 15 each side, clean and pain-free. If the left side is sore at the bottom, only hover.' },
       { id: 'handstand', name: 'Handstand', type: 'hold', sets: 5, secs: 30, rest: 40, levels: ['Chest to wall', 'Back to wall', 'Kick-up attempts', 'Freestanding'] },
       { id: 'flag', name: 'Human flag', type: 'hold', sets: 5, secs: 8, rest: 50, levels: ['Vertical flag hold', 'Tuck flag', 'One-leg tuck', 'Straddle'] },
       { id: 'archer', name: 'Archer pulls', type: 'reps', sets: 3, reps: [4, 6], each: true, rest: 15, levels: ['Archer rows', 'Assisted archer pulls', 'Full archer pulls'] },
@@ -117,21 +117,24 @@ export const ROUTINES = {
       { name: 'Scapular pull-ups', secs: 40, cue: '10 reps' },
       { name: 'Scapular push-ups', secs: 40, cue: '10 reps' },
       { name: 'Dead hang', secs: 30 },
+      { name: 'Copenhagen reps', secs: 30, sides: true, cue: '5 reps · hover only if the left side is sore' },
+      { name: 'Copenhagen reps (2)', secs: 30, sides: true, cue: '5 reps' },
+      { name: 'Copenhagen reps (3)', secs: 30, sides: true, cue: '5 reps · 15 each side done' },
     ],
   },
   hipsPancake: {
     name: 'Hips and pancake', transition: 8,
-    note: '15 min after glute days, while your hips are warm. Passive holds at about 7/10; the active moves are where the strength at end range comes from.',
-    track: ['gm', 'straddle'],
+    note: '15 min after glute days, while your hips are warm. Loaded good mornings first, then long holds to go deep, then leg lifts to own the new range.',
+    track: ['gm', 'pancakeHands', 'straddle', 'legLift'],
     steps: [
-      { name: 'Straddle sit', secs: 90, cue: 'Sitting on {straddle} · long hold, 7/10', part: 'Pancake' },
-      { name: 'Straddle sit (2)', secs: 90, cue: 'Walk the hands a little further', part: 'Pancake' },
-      { name: 'Standing wide good mornings', secs: 45, cue: '10 slow reps · {gm}', part: 'Pancake' },
+      { name: 'Standing wide good mornings', secs: 45, cue: '10 reps · {gm} · 3 s down, 2 s pause, flat back, feel the inner thighs', part: 'Pancake' },
       { name: 'Standing wide good mornings (2)', secs: 45, cue: '10 reps · {gm}', part: 'Pancake' },
       { name: 'Standing wide good mornings (3)', secs: 45, cue: '10 reps · {gm}', part: 'Pancake' },
-      { name: 'Straddle leg lifts', secs: 30, sides: true, cue: '8 reps, hold 2 s at the top', part: 'Pancake' },
-      { name: 'Frog rocks', secs: 40, cue: '10 reps, sink a little deeper each rep', part: 'Hips' },
-      { name: 'Frog hold', secs: 45, cue: 'Settle in, 7/10', part: 'Hips' },
+      { name: 'Straddle sit', secs: 90, cue: 'On {straddle} · {pancakeHands} · back long, belly button forward · 7/10', part: 'Pancake' },
+      { name: 'Straddle sit (2)', secs: 90, cue: 'Stop where the back starts to round', part: 'Pancake' },
+      { name: 'Straddle leg lifts', secs: 30, sides: true, cue: '{legLift} · 8 reps, hold 2 s', part: 'Pancake' },
+      { name: 'Frog rocks', secs: 40, cue: '10 reps · hips in line with knees, not behind', part: 'Hips' },
+      { name: 'Frog hold', secs: 45, cue: 'Hips in line with knees, not behind · sink, don\'t push back · 7/10', part: 'Hips' },
       { name: 'Pigeon pose', secs: 90, sides: true, part: 'Hips' },
       { name: 'Couch stretch', secs: 60, sides: true, cue: 'Squeeze the glute of the back leg', part: 'Hips' },
       { name: 'Hamstring stretch', secs: 45, sides: true, part: 'Hips' },
@@ -163,7 +166,7 @@ export const ROUTINES = {
     steps: [
       { name: 'Deep squat hold', secs: 30, cue: 'Heels down, chest up', part: 'Hips' },
       { name: 'Deep squat hold (2)', secs: 30, part: 'Hips' },
-      { name: 'Frog rocks', secs: 40, cue: '10 reps', part: 'Hips' },
+      { name: 'Frog rocks', secs: 40, cue: '10 reps · hips in line with knees, not behind', part: 'Hips' },
       { name: '90/90 hip switches', secs: 40, cue: '10 reps', part: 'Hips' },
       { name: 'Hip circles', secs: 20, sides: true, cue: '10 each direction', part: 'Hips' },
       { name: 'Leg swings', secs: 20, sides: true, cue: '10 forward-back, 10 side to side', part: 'Hips' },
@@ -195,23 +198,22 @@ export const ROUTINES = {
   flexFull: {
     name: 'Full flexibility session', transition: 10,
     note: 'Slow, long holds at about 7/10. Back off at any sharp or pulling groin pain. Target: at least one a week.',
-    track: ['gm', 'straddle', 'bridge'],
+    track: ['gm', 'pancakeHands', 'straddle', 'legLift', 'bridge'],
     steps: [
       { name: 'Cat-cow', secs: 40, cue: '10 reps', part: 'Warm-up' },
       { name: 'Hip circles', secs: 20, sides: true, cue: '10 each direction', part: 'Warm-up' },
       { name: '90/90 hip switches', secs: 40, cue: '10 reps', part: 'Warm-up' },
       { name: 'Wall handstand practice', secs: 300, cue: 'Short holds, rest as needed', part: 'Handstand' },
-      { name: 'Straddle sit', secs: 90, cue: 'Sitting on {straddle} · long hold', part: 'Pancake' },
-      { name: 'Straddle sit (2)', secs: 90, part: 'Pancake' },
-      { name: 'Standing wide good mornings', secs: 45, cue: '10 reps · {gm}', part: 'Pancake' },
+      { name: 'Standing wide good mornings', secs: 45, cue: '10 reps · {gm} · 3 s down, 2 s pause, flat back, feel the inner thighs', part: 'Pancake' },
       { name: 'Standing wide good mornings (2)', secs: 45, cue: '10 reps · {gm}', part: 'Pancake' },
       { name: 'Standing wide good mornings (3)', secs: 45, cue: '10 reps · {gm}', part: 'Pancake' },
-      { name: 'Seated straddle walk-forward pulses', secs: 40, cue: '10 reps', part: 'Pancake' },
-      { name: 'Seated straddle walk-forward pulses (2)', secs: 40, cue: '10 reps', part: 'Pancake' },
-      { name: 'Frog rocks', secs: 40, cue: '10 reps, sink deeper each rep', part: 'Pancake' },
-      { name: 'Frog hold', secs: 60, cue: '7/10', part: 'Pancake' },
-      { name: 'Straddle leg lifts', secs: 30, sides: true, cue: '8 reps, hold 2 s', part: 'Pancake' },
+      { name: 'Straddle sit', secs: 90, cue: 'On {straddle} · {pancakeHands} · back long, belly button forward', part: 'Pancake' },
+      { name: 'Straddle sit (2)', secs: 90, cue: 'Stop where the back starts to round', part: 'Pancake' },
+      { name: 'Seated straddle walk-forward pulses', secs: 40, cue: '10 reps · back long', part: 'Pancake' },
+      { name: 'Straddle leg lifts', secs: 30, sides: true, cue: '{legLift} · 8 reps, hold 2 s', part: 'Pancake' },
       { name: 'Straddle leg lifts (2)', secs: 30, sides: true, cue: '8 reps', part: 'Pancake' },
+      { name: 'Frog rocks', secs: 40, cue: '10 reps · hips in line with knees, not behind', part: 'Pancake' },
+      { name: 'Frog hold', secs: 60, cue: 'Hips in line with knees, not behind · sink, don\'t push back · 7/10', part: 'Pancake' },
       { name: 'Couch stretch', secs: 60, sides: true, part: 'Bridge' },
       { name: 'Couch stretch (2)', secs: 60, sides: true, part: 'Bridge' },
       { name: 'Thoracic extension over foam roller', secs: 120, part: 'Bridge' },
@@ -226,13 +228,13 @@ export const ROUTINES = {
   flex15: {
     name: 'Flexibility: 15 min after yoga', transition: 10,
     note: 'The key active moves from the full session.',
-    track: ['gm', 'bridge'],
+    track: ['gm', 'legLift', 'bridge'],
     steps: [
       { name: 'Wall handstand practice', secs: 300, cue: 'Short holds, rest as needed' },
-      { name: 'Standing wide good mornings', secs: 45, cue: '10 reps · {gm}' },
+      { name: 'Standing wide good mornings', secs: 45, cue: '10 reps · {gm} · 3 s down, 2 s pause, flat back, feel the inner thighs' },
       { name: 'Standing wide good mornings (2)', secs: 45, cue: '10 reps · {gm}' },
       { name: 'Standing wide good mornings (3)', secs: 45, cue: '10 reps · {gm}' },
-      { name: 'Straddle leg lifts', secs: 30, sides: true, cue: '8 reps, hold 2 s' },
+      { name: 'Straddle leg lifts', secs: 30, sides: true, cue: '{legLift} · 8 reps, hold 2 s' },
       { name: 'Straddle leg lifts (2)', secs: 30, sides: true, cue: '8 reps' },
       { name: 'Bridge progression', secs: 60, cue: '5 holds of 5 s · {bridge}' },
       { name: 'Bridge progression (2)', secs: 60, cue: '5 holds of 5 s' },
@@ -281,10 +283,26 @@ export const ROUTINES = {
 };
 
 // Flexibility progressions you log on the routine page (shown in the cues).
+// Each level shows its "move up when" rule. The rule is: meet it two sessions
+// in a row, then move up one step. `check` is the yes/no question asked at the
+// end of a routine; `group` links levels that share one check (change one at a time).
 export const FLEX_PROGRESS = {
-  gm: { label: 'Wide good morning weight', type: 'kg', start: 0, hint: 'Add 2.5 kg when 3 × 10 feels easy' },
-  straddle: { label: 'Straddle sit on', options: ['two yoga blocks', 'one yoga block', 'a folded mat', 'the floor'], start: 1, hint: 'Go lower when you can hinge forward easily' },
-  bridge: { label: 'Bridge level', options: ['Tabletop bridge', 'Glute bridge, arms overhead', 'Full bridge from the floor', 'Straight arms, weight over hands', 'Wall walk-downs'], start: 0, hint: 'Move up when 5 × 5 s feels solid' },
+  gm: { label: 'Wide good morning weight', type: 'kg', start: 0, step: 2.5,
+    rule: '3 × 10 with a flat back, felt in the inner thighs (not the lower back). Then add 2.5 kg.',
+    check: 'Good mornings: 3 × 10 with a flat back, felt in the inner thighs?' },
+  pancakeHands: { label: 'Pancake hands', options: ['hands on a chair', 'hands on stacked blocks', 'hands on the floor', 'forearms on the floor'], start: 0, group: 'straddleHold',
+    rule: 'Back stays long for the whole 90 s hold at about 7/10. Move the hands down before lowering the seat.' },
+  straddle: { label: 'Straddle seat', options: ['two yoga blocks', 'one yoga block', 'a folded mat', 'the floor'], start: 0, group: 'straddleHold',
+    rule: 'Same test as the hands. Lower the seat once the hands are on the floor — one change at a time.' },
+  legLift: { label: 'Leg lifts', options: ['Leaning back on hands, knee bent', 'Leaning back on hands, legs straight', 'Hands beside hips', 'Hands in front of hips'], start: 0,
+    rule: '8 lifts each side, 2 s holds, heel clearly off the floor, without leaning further back.',
+    check: 'Leg lifts: 8 clean lifts each side, holding 2 s?' },
+  bridge: { label: 'Bridge level', options: ['Tabletop bridge', 'Glute bridge, arms overhead', 'Full bridge from the floor', 'Straight arms, weight over hands', 'Wall walk-downs'], start: 0,
+    rule: '5 holds of 5 s, steady, calm breathing, no pain.',
+    check: 'Bridge: 5 × 5 s holds, steady and pain-free?' },
+};
+export const FLEX_GROUPS = {
+  straddleHold: { members: ['pancakeHands', 'straddle'], check: 'Straddle sit: back long for the whole hold?' },
 };
 
 // Interval circuits: work/rest x exercises x rounds.
